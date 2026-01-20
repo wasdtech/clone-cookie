@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, Building, Upgrade, GoldenCookieState, ActiveEffect, Achievement } from '../types';
+import { GameState, GoldenCookieState, ActiveEffect, Achievement } from '../types';
 import { BUILDINGS, UPGRADES, ACHIEVEMENTS, INITIAL_STATE } from '../constants';
 
 const SAVE_KEY = 'biscoito_clicker_save_v1';
