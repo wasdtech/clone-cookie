@@ -117,6 +117,22 @@ export const useGameEngine = () => {
     }
   }, []);
 
+  // UPDATE TITLE WITH COOKIE COUNT
+  useEffect(() => {
+    const count = Math.floor(gameState.cookies).toLocaleString();
+    document.title = `${count} biscoitos - Biscoito Clicker`;
+  }, [gameState.cookies]);
+
+  // SAVE ON WINDOW CLOSE/RELOAD
+  useEffect(() => {
+    const handleUnload = () => {
+        // Use ref to get the absolute latest state without triggering re-renders
+        localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
   // Manual Save Function
   const saveGame = useCallback(() => {
     try {
