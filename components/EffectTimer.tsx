@@ -17,7 +17,7 @@ export const EffectTimer: React.FC<Props> = ({ effects }) => {
 
   return (
     <div className="absolute top-20 left-1/2 -translate-x-1/2 w-full px-8 flex flex-col items-center gap-2 z-40 pointer-events-none">
-      {effects.map((effect, index) => {
+      {effects.map((effect) => {
         const timeLeft = Math.max(0, effect.endTime - now);
         const progress = (timeLeft / effect.duration) * 100;
         

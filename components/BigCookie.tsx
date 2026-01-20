@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GameState, FloatingText } from '../types';
+import { GameState } from '../types';
 import { Pencil } from 'lucide-react';
 
 interface Props {

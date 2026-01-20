@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { FloatingText as FloatingTextType } from '../types';
 
 interface Props {
