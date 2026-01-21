@@ -13,12 +13,14 @@ export const useGameEngine = () => {
   const [notificationQueue, setNotificationQueue] = useState<Achievement[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Refs para controle interno sem causar re-renders desnecessários
   const gameStateRef = useRef(gameState);
   const activeEffectsRef = useRef(activeEffects);
-  const goldenCookieTimer = useRef(0);
-  const autoSaveTimer = useRef(0);
+  const goldenCookieTimerRef = useRef(0);
+  const autoSaveTimerRef = useRef(0);
   const lastTickRef = useRef(Date.now());
 
+  // Sincroniza referências com o estado
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
@@ -71,6 +73,7 @@ export const useGameEngine = () => {
     return { calculatedCps: newCps, calculatedClickValue: newClickValue };
   }, []);
 
+  // Carregamento inicial do save
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
@@ -108,12 +111,14 @@ export const useGameEngine = () => {
     }
   }, []);
 
+  // Loop Principal (10 vezes por segundo)
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
 
+      // Limpar efeitos expirados
       setActiveEffects(prev => {
         const filtered = prev.filter(e => e.endTime > now);
         if (filtered.length !== prev.length) return filtered;
@@ -133,6 +138,7 @@ export const useGameEngine = () => {
           lastSaveTime: now,
         };
 
+        // Verificar conquistas
         const newAchievements: string[] = [];
         ACHIEVEMENTS.forEach(ach => {
             if (!newState.achievements.includes(ach.id) && ach.trigger(newState)) {
@@ -148,27 +154,28 @@ export const useGameEngine = () => {
         return newState;
       });
 
-      if (!goldenCookieTimer.current) {
-          goldenCookieTimer.current = 0;
+      // Lógica do Cookie Dourado
+      if (!goldenCookie) {
+          goldenCookieTimerRef.current += delta;
+          if (goldenCookieTimerRef.current >= 120000) { // Surge a cada 2 min aproximadamente
+              spawnGoldenCookie();
+              goldenCookieTimerRef.current = 0;
+          }
       }
 
-      goldenCookieTimer.current += delta;
-      if (goldenCookieTimer.current >= 120000) {
-          spawnGoldenCookie();
-          goldenCookieTimer.current = 0;
-      }
-
-      autoSaveTimer.current += delta;
-      if (autoSaveTimer.current >= 30000) {
+      // Auto-salvamento
+      autoSaveTimerRef.current += delta;
+      if (autoSaveTimerRef.current >= 30000) {
           saveGame();
-          autoSaveTimer.current = 0;
+          autoSaveTimerRef.current = 0;
       }
 
     }, 100);
 
     return () => clearInterval(interval);
-  }, [calculateStats, saveGame]);
+  }, [calculateStats, saveGame, !!goldenCookie]);
 
+  // Intervalo separado para a vida do Cookie Dourado (suavidade visual)
   useEffect(() => {
     if (goldenCookie) {
         const timer = setInterval(() => {
