@@ -18,7 +18,8 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
       <div className="flex flex-col pb-10">
         {BUILDINGS.map((building) => {
           const count = gameState.buildings[building.id] || 0;
-          const cost = Math.floor(building.baseCost * Math.pow(1.15, count));
+          // Updated exponent to 1.22 to match engine
+          const cost = Math.floor(building.baseCost * Math.pow(1.22, count));
           const canAfford = gameState.cookies >= cost;
           
           return (

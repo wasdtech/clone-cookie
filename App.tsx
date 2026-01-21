@@ -6,8 +6,9 @@ import { UpgradesPanel } from './components/UpgradesPanel';
 import { FloatingTextOverlay } from './components/FloatingText';
 import { EffectTimer } from './components/EffectTimer';
 import { AchievementsModal } from './components/AchievementsModal';
+import { PrestigeModal } from './components/PrestigeModal';
 import { FloatingText } from './types';
-import { Save, Trash2, Github, Trophy } from 'lucide-react';
+import { Save, Trash2, Github, Trophy, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   const { 
@@ -22,11 +23,14 @@ const App: React.FC = () => {
     clickGoldenCookie,
     activeEffects,
     isSaving,
-    updateBakeryName
+    updateBakeryName,
+    ascend,
+    calculatePrestigeGain
   } = useGameEngine();
 
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+  const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   
   // Resizable Sidebar Logic
   const [sidebarWidth, setSidebarWidth] = useState(300); // Initial width
@@ -85,11 +89,19 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Achievements Modal */}
+      {/* Modals */}
       <AchievementsModal 
          isOpen={isAchievementsOpen} 
          onClose={() => setIsAchievementsOpen(false)} 
          gameState={gameState} 
+      />
+
+      <PrestigeModal
+          isOpen={isPrestigeOpen}
+          onClose={() => setIsPrestigeOpen(false)}
+          gameState={gameState}
+          calculatePrestigeGain={calculatePrestigeGain}
+          onAscend={ascend}
       />
 
       {/* Visual Effects Overlay */}
@@ -111,10 +123,13 @@ const App: React.FC = () => {
             <span onClick={() => setIsAchievementsOpen(true)} className="flex items-center gap-1 hover:text-amber-400 text-amber-600 font-bold" title="Conquistas">
                 <Trophy size={10} />
             </span>
+            <span onClick={() => setIsPrestigeOpen(true)} className="flex items-center gap-1 hover:text-purple-400 text-purple-600 font-bold" title="Ascensão">
+                <Sparkles size={10} />
+            </span>
             <span onClick={saveGame} className="flex items-center gap-1 hover:text-green-400 text-green-600 font-bold" title="Salvar Agora">
                 <Save size={10} />
             </span>
-            <span onClick={resetGame} className="flex items-center gap-1 hover:text-red-500" title="Apagar Save">
+            <span onClick={resetGame} className="flex items-center gap-1 hover:text-red-500" title="Hard Reset (Apaga tudo)">
                 <Trash2 size={10} />
             </span>
         </div>
@@ -168,6 +183,11 @@ const App: React.FC = () => {
         <div className="h-auto z-20 shadow-xl border-b-2 border-amber-700 bg-gray-800 shrink-0">
              <div className="bg-amber-950/30 text-center py-2 text-amber-500 text-lg font-bold cookie-font tracking-widest flex justify-center relative shadow-inner border-b border-amber-900/50">
                 {gameState.bakeryName.toUpperCase()}
+                {gameState.prestigeLevel > 0 && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] bg-purple-900/50 px-2 py-0.5 rounded border border-purple-500/50 text-purple-200 flex items-center gap-1" title="Nível de Ascensão">
+                        <Sparkles size={10} /> {gameState.prestigeLevel}
+                    </div>
+                )}
              </div>
              <UpgradesPanel gameState={gameState} buyUpgrade={buyUpgrade} />
         </div>

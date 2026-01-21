@@ -30,14 +30,16 @@ export interface Achievement {
 
 export interface GameState {
   cookies: number;
-  totalCookies: number; // Lifetime cookies
-  manualClicks: number; // Total manual clicks
+  totalCookies: number; // Lifetime cookies current run
+  lifetimeCookies: number; // All time cookies (including past ascensions)
+  manualClicks: number;
   buildings: Record<string, number>;
-  upgrades: string[]; // IDs of purchased upgrades
-  achievements: string[]; // IDs of unlocked achievements
+  upgrades: string[];
+  achievements: string[];
   lastSaveTime: number;
   startTime: number;
   bakeryName: string;
+  prestigeLevel: number; // Nível de ascensão (Cristais)
 }
 
 export interface FloatingText {
@@ -53,7 +55,7 @@ export interface GoldenCookieState {
   x: number;
   y: number;
   type: 'frenzy' | 'lucky' | 'clickfrenzy';
-  life: number; // Seconds remaining
+  life: number;
 }
 
 export interface ActiveEffect {
@@ -61,5 +63,5 @@ export interface ActiveEffect {
   label: string;
   multiplier: number;
   endTime: number;
-  duration: number; // Total duration for progress bar
+  duration: number;
 }

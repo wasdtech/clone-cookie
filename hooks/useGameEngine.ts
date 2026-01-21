@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, GoldenCookieState, ActiveEffect, Achievement } from '../types';
 import { BUILDINGS, UPGRADES, ACHIEVEMENTS, INITIAL_STATE } from '../constants';
 
-const SAVE_KEY = 'biscoito_clicker_save_v1';
+const SAVE_KEY = 'biscoito_clicker_save_v2'; // Changed key to force reset/migration or handle appropriately
 
 export const useGameEngine = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
@@ -30,6 +30,7 @@ export const useGameEngine = () => {
   const calculateStats = useCallback((state: GameState, effects: ActiveEffect[]) => {
     let newCps = 0;
     
+    // Base Calculation
     BUILDINGS.forEach((b) => {
       let buildingCps = b.baseCps;
       const count = state.buildings[b.id] || 0;
@@ -44,6 +45,7 @@ export const useGameEngine = () => {
       newCps += buildingCps * count;
     });
 
+    // Global Upgrades
     state.upgrades.forEach((uId) => {
       const upgrade = UPGRADES.find(u => u.id === uId);
       if (upgrade?.type === 'global') {
@@ -51,14 +53,26 @@ export const useGameEngine = () => {
       }
     });
 
+    // Prestige Bonus (5% per level)
+    const prestigeMultiplier = 1 + (state.prestigeLevel * 0.05);
+    newCps *= prestigeMultiplier;
+
+    // Click Value
     let newClickValue = 1;
+    // Base click depends on CpS slightly to avoid becoming obsolete?
+    // Let's keep it upgrading via Upgrades primarily, but add 1% of CpS to click
+    newClickValue += newCps * 0.01;
+
     state.upgrades.forEach((uId) => {
         const upgrade = UPGRADES.find(u => u.id === uId);
         if (upgrade?.type === 'click') {
             newClickValue *= upgrade.multiplier;
         }
     });
+    
+    newClickValue *= prestigeMultiplier;
 
+    // Active Effects (Temporary)
     effects.forEach(effect => {
       if (effect.type === 'frenzy') {
         newCps *= effect.multiplier;
@@ -76,17 +90,21 @@ export const useGameEngine = () => {
     if (saved) {
       try {
         const parsed: GameState = JSON.parse(saved);
-        if (!parsed.achievements) parsed.achievements = [];
-        if (!parsed.bakeryName) parsed.bakeryName = "Padaria do Jogador";
-
+        // Migration logic for old saves
+        if (typeof parsed.prestigeLevel === 'undefined') parsed.prestigeLevel = 0;
+        if (typeof parsed.lifetimeCookies === 'undefined') parsed.lifetimeCookies = parsed.totalCookies;
+        
         const now = Date.now();
         const secondsOffline = (now - parsed.lastSaveTime) / 1000;
         
         const stats = calculateStats(parsed, []);
         if (secondsOffline > 60) {
-            const earned = stats.calculatedCps * secondsOffline * 0.5;
+            // Cap offline earnings to 24 hours to prevent massive overflow exploits
+            const effectiveSeconds = Math.min(secondsOffline, 86400); 
+            const earned = stats.calculatedCps * effectiveSeconds * 0.5; // 50% efficiency offline
             parsed.cookies += earned;
             parsed.totalCookies += earned;
+            parsed.lifetimeCookies += earned;
         }
         
         setGameState({ ...parsed, lastSaveTime: now });
@@ -108,10 +126,51 @@ export const useGameEngine = () => {
     }
   }, []);
 
+  const calculatePrestigeGain = (lifetimeCookies: number) => {
+      // Formula: 1 crystal per sqrt(lifetime / 1,000,000)
+      // Needs 1M for 1, 4M for 2, 9M for 3...
+      if (lifetimeCookies < 1000000) return 0;
+      return Math.floor(Math.sqrt(lifetimeCookies / 1000000));
+  };
+
+  const ascend = () => {
+      const currentGain = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
+      // We only give the difference if we want cumulative, but usually roguelites simply add based on run.
+      // Cookie Clicker style: Heavenly Chips based on total lifetime.
+      // Let's make it simpler: You gain crystals based on THIS run's contribution + previous.
+      
+      // Actually, standard practice: Recalculate total level based on ALL TIME cookies.
+      // But we store 'prestigeLevel' as the currency. 
+      // Let's do: New Level = calculated - currentLevel.
+      
+      const potentialLevel = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
+      const levelsToGain = Math.max(0, potentialLevel - gameStateRef.current.prestigeLevel);
+
+      if (levelsToGain <= 0) return false;
+
+      if (confirm(`Você ascenderá e ganhará ${levelsToGain} Cristais de Açúcar (+${levelsToGain * 5}% CpS). Todo o progresso atual será resetado, mas conquistas e cristais permanecem. Continuar?`)) {
+          setGameState(prev => ({
+              ...INITIAL_STATE,
+              prestigeLevel: prev.prestigeLevel + levelsToGain,
+              achievements: prev.achievements,
+              lifetimeCookies: prev.lifetimeCookies, // Keep lifetime tracking
+              startTime: Date.now(),
+              bakeryName: prev.bakeryName
+          }));
+          setActiveEffects([]);
+          setGoldenCookie(null);
+          saveGame();
+          return true;
+      }
+      return false;
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       const delta = now - lastTickRef.current;
+      // Prevent huge jumps if tab was sleeping
+      const safeDelta = Math.min(delta, 5000); 
       lastTickRef.current = now;
 
       setActiveEffects(prev => {
@@ -125,19 +184,30 @@ export const useGameEngine = () => {
       setClickValue(calculatedClickValue);
 
       setGameState((prev) => {
-        const cookiesEarned = (calculatedCps / 1000) * delta;
+        const cookiesEarned = (calculatedCps / 1000) * safeDelta;
         const newState = {
           ...prev,
           cookies: prev.cookies + cookiesEarned,
           totalCookies: prev.totalCookies + cookiesEarned,
+          lifetimeCookies: (prev.lifetimeCookies || prev.totalCookies) + cookiesEarned,
           lastSaveTime: now,
         };
 
+        // Achievement check logic optimization: only check sometimes or check specific types
         const newAchievements: string[] = [];
         ACHIEVEMENTS.forEach(ach => {
-            if (!newState.achievements.includes(ach.id) && ach.trigger(newState)) {
-                newAchievements.push(ach.id);
-                setNotificationQueue(q => [...q, ach]);
+            if (!newState.achievements.includes(ach.id)) {
+                // Special handling for CpS achievement because it's not in state
+                if (ach.id.startsWith('ach_cps_')) {
+                    const req = parseInt(ach.description.replace(/\D/g,''));
+                    if (calculatedCps >= req) {
+                        newAchievements.push(ach.id);
+                        setNotificationQueue(q => [...q, ach]);
+                    }
+                } else if (ach.trigger(newState)) {
+                    newAchievements.push(ach.id);
+                    setNotificationQueue(q => [...q, ach]);
+                }
             }
         });
         
@@ -150,13 +220,14 @@ export const useGameEngine = () => {
 
       if (!goldenCookieTimerRef.current) goldenCookieTimerRef.current = 0;
       
-      goldenCookieTimerRef.current += delta;
-      if (goldenCookieTimerRef.current >= 120000) {
+      goldenCookieTimerRef.current += safeDelta;
+      // Random spawn window between 2 and 4 minutes (adjusted for difficulty)
+      if (goldenCookieTimerRef.current >= 120000 + Math.random() * 120000) {
           spawnGoldenCookie();
           goldenCookieTimerRef.current = 0;
       }
 
-      autoSaveTimerRef.current += delta;
+      autoSaveTimerRef.current += safeDelta;
       if (autoSaveTimerRef.current >= 30000) {
           saveGame();
           autoSaveTimerRef.current = 0;
@@ -183,8 +254,8 @@ export const useGameEngine = () => {
   const spawnGoldenCookie = () => {
      setGoldenCookie({
         active: true,
-        x: Math.random() * 70 + 15,
-        y: Math.random() * 70 + 15,
+        x: Math.random() * 80 + 10,
+        y: Math.random() * 80 + 10,
         type: Math.random() > 0.9 ? 'clickfrenzy' : (Math.random() > 0.5 ? 'frenzy' : 'lucky'),
         life: 13,
      });
@@ -197,14 +268,20 @@ export const useGameEngine = () => {
     const now = Date.now();
 
     if (goldenCookie.type === 'lucky') {
+        // Nerfed Lucky slightly: Max 15% of bank or 15 mins of CpS
         const gain = Math.min(gameState.cookies * 0.15 + 13, cps * 900 + 13);
-        setGameState(prev => ({ ...prev, cookies: prev.cookies + gain, totalCookies: prev.totalCookies + gain }));
+        setGameState(prev => ({ 
+            ...prev, 
+            cookies: prev.cookies + gain, 
+            totalCookies: prev.totalCookies + gain,
+            lifetimeCookies: prev.lifetimeCookies + gain
+        }));
         message = `Sortudo! +${Math.floor(gain)}`;
     } else if (goldenCookie.type === 'frenzy') {
-        setActiveEffects(prev => [...prev, { type: 'frenzy', label: 'Frenesi (x15 CpS)', multiplier: 15, endTime: now + 77000, duration: 77000 }]);
-        message = "Frenesi!";
+        setActiveEffects(prev => [...prev, { type: 'frenzy', label: 'Frenesi (x7)', multiplier: 7, endTime: now + 77000, duration: 77000 }]);
+        message = "Frenesi x7!";
     } else if (goldenCookie.type === 'clickfrenzy') {
-        setActiveEffects(prev => [...prev, { type: 'clickfrenzy', label: 'Click Frenesi (x777)', multiplier: 777, endTime: now + 13000, duration: 13000 }]);
+        setActiveEffects(prev => [...prev, { type: 'clickfrenzy', label: 'Click Power (x777)', multiplier: 777, endTime: now + 13000, duration: 13000 }]);
         message = "Poder de Clique!";
     }
 
@@ -216,7 +293,8 @@ export const useGameEngine = () => {
     const building = BUILDINGS.find((b) => b.id === buildingId);
     if (!building) return;
     const count = gameState.buildings[buildingId] || 0;
-    const price = Math.floor(building.baseCost * Math.pow(1.15, count));
+    // Dificuldade Aumentada: Exponente 1.22
+    const price = Math.floor(building.baseCost * Math.pow(1.22, count));
 
     if (gameState.cookies >= price) {
       setGameState((prev) => ({
@@ -247,13 +325,14 @@ export const useGameEngine = () => {
       ...prev,
       cookies: prev.cookies + clickValue,
       totalCookies: prev.totalCookies + clickValue,
+      lifetimeCookies: prev.lifetimeCookies + clickValue,
       manualClicks: (prev.manualClicks || 0) + 1,
     }));
     return clickValue;
   };
 
   const resetGame = () => {
-    if(confirm("Reiniciar tudo?")) {
+    if(confirm("Reiniciar todo o progresso (hard reset)? Isso apaga tudo, incluindo conquistas.")) {
         localStorage.removeItem(SAVE_KEY);
         setGameState(INITIAL_STATE);
         window.location.reload();
@@ -267,6 +346,7 @@ export const useGameEngine = () => {
   return {
     gameState, cps, clickValue, activeEffects, notificationQueue, isSaving,
     saveGame, buyBuilding, buyUpgrade, manualClick, resetGame,
-    goldenCookie, clickGoldenCookie, updateBakeryName, dismissNotification
+    goldenCookie, clickGoldenCookie, updateBakeryName, dismissNotification,
+    ascend, calculatePrestigeGain
   };
 };
