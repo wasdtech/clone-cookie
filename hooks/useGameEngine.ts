@@ -13,17 +13,23 @@ export const useGameEngine = () => {
   const [notificationQueue, setNotificationQueue] = useState<Achievement[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Refs for stable access in intervals
+  // Refs para acesso estável dentro do setInterval sem causar re-renders infinitos
   const gameStateRef = useRef(gameState);
+  const activeEffectsRef = useRef(activeEffects);
   const goldenCookieTimer = useRef(0);
   const autoSaveTimer = useRef(0);
   const lastTickRef = useRef(Date.now());
 
+  // Sincroniza refs quando o estado muda
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  const calculateStats = useCallback((state: GameState, effects: typeof activeEffects) => {
+  useEffect(() => {
+    activeEffectsRef.current = activeEffects;
+  }, [activeEffects]);
+
+  const calculateStats = useCallback((state: GameState, effects: ActiveEffect[]) => {
     let newCps = 0;
     
     BUILDINGS.forEach((b) => {
@@ -67,6 +73,7 @@ export const useGameEngine = () => {
     return { calculatedCps: newCps, calculatedClickValue: newClickValue };
   }, []);
 
+  // Carregar Jogo
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
@@ -79,44 +86,27 @@ export const useGameEngine = () => {
         const now = Date.now();
         const secondsOffline = (now - parsed.lastSaveTime) / 1000;
         
-        let offlineCps = 0;
-        BUILDINGS.forEach((b) => {
-           let bCps = b.baseCps;
-           parsed.upgrades.forEach(uId => {
-             const u = UPGRADES.find(up => up.id === uId);
-             if (u?.type === 'building' && u.targetId === b.id) bCps *= u.multiplier;
-             if (u?.type === 'global') offlineCps *= u.multiplier; 
-           });
-           offlineCps += bCps * (parsed.buildings[b.id] || 0);
-        });
-
+        const stats = calculateStats(parsed, []);
         if (secondsOffline > 60) {
-            const earned = offlineCps * secondsOffline * 0.5;
+            const earned = stats.calculatedCps * secondsOffline * 0.5;
             parsed.cookies += earned;
             parsed.totalCookies += earned;
         }
         
         setGameState({ ...parsed, lastSaveTime: now });
       } catch (e) {
-        console.error("Save file corrupted", e);
+        console.error("Erro ao carregar save", e);
         setGameState(INITIAL_STATE);
       }
     }
     lastTickRef.current = Date.now();
-  }, []);
+  }, [calculateStats]);
 
+  // Atualizar Título
   useEffect(() => {
     const count = Math.floor(gameState.cookies).toLocaleString();
     document.title = `${count} biscoitos - Biscoito Clicker`;
   }, [gameState.cookies]);
-
-  useEffect(() => {
-    const handleUnload = () => {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
-    };
-    window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
-  }, []);
 
   const saveGame = useCallback(() => {
     try {
@@ -124,19 +114,25 @@ export const useGameEngine = () => {
         setIsSaving(true);
         setTimeout(() => setIsSaving(false), 2000);
     } catch (e) {
-        console.error("Failed to save game", e);
+        console.error("Falha ao salvar", e);
     }
   }, []);
 
+  // Loop Principal
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
 
-      setActiveEffects(prev => prev.filter(e => e.endTime > now));
+      // Limpar efeitos expirados
+      setActiveEffects(prev => {
+        const filtered = prev.filter(e => e.endTime > now);
+        if (filtered.length !== prev.length) return filtered;
+        return prev;
+      });
 
-      const { calculatedCps, calculatedClickValue } = calculateStats(gameState, activeEffects);
+      const { calculatedCps, calculatedClickValue } = calculateStats(gameStateRef.current, activeEffectsRef.current);
       setCps(calculatedCps);
       setClickValue(calculatedClickValue);
 
@@ -149,6 +145,7 @@ export const useGameEngine = () => {
           lastSaveTime: now,
         };
 
+        // Conquistas
         const newAchievements: string[] = [];
         ACHIEVEMENTS.forEach(ach => {
             if (!newState.achievements.includes(ach.id) && ach.trigger(newState)) {
@@ -164,22 +161,16 @@ export const useGameEngine = () => {
         return newState;
       });
 
+      // Cookie Dourado
       if (!goldenCookie) { 
          goldenCookieTimer.current += delta;
-         if (goldenCookieTimer.current >= 150000) {
+         if (goldenCookieTimer.current >= 120000) { // 2 minutos
              spawnGoldenCookie();
              goldenCookieTimer.current = 0;
          }
-      } else {
-         goldenCookieTimer.current = 0;
-         setGoldenCookie(prev => {
-            if (!prev) return null;
-            const newLife = prev.life - (delta / 1000);
-            if (newLife <= 0) return null;
-            return { ...prev, life: newLife };
-         });
       }
 
+      // Auto Save
       autoSaveTimer.current += delta;
       if (autoSaveTimer.current >= 30000) {
           saveGame();
@@ -189,7 +180,7 @@ export const useGameEngine = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [gameState, activeEffects, goldenCookie, calculateStats, saveGame]);
+  }, [calculateStats, saveGame, !!goldenCookie]);
 
   const spawnGoldenCookie = () => {
      const typeRoll = Math.random();
@@ -197,8 +188,8 @@ export const useGameEngine = () => {
      
      setGoldenCookie({
         active: true,
-        x: Math.random() * 80 + 10,
-        y: Math.random() * 80 + 10,
+        x: Math.random() * 70 + 15,
+        y: Math.random() * 70 + 15,
         type: type as any,
         life: 13,
      });
@@ -219,7 +210,7 @@ export const useGameEngine = () => {
         }));
         message = `Sortudo! +${Math.floor(gain)} cookies`;
     } else if (goldenCookie.type === 'frenzy') {
-        const duration = 50000;
+        const duration = 77000;
         setActiveEffects(prev => [...prev, { 
             type: 'frenzy', 
             label: 'Frenesi (x15 CpS)',
@@ -227,7 +218,7 @@ export const useGameEngine = () => {
             endTime: now + duration,
             duration: duration
         }]);
-        message = "Frenesi! Produção x15 por 50s";
+        message = "Frenesi! Produção x15";
     } else if (goldenCookie.type === 'clickfrenzy') {
         const duration = 13000;
         setActiveEffects(prev => [...prev, { 
@@ -237,7 +228,7 @@ export const useGameEngine = () => {
             endTime: now + duration,
             duration: duration
         }]);
-        message = "Poder de Clique! Cliques x777 por 13s";
+        message = "Poder de Clique! x777";
     }
 
     setGoldenCookie(null);
@@ -257,7 +248,7 @@ export const useGameEngine = () => {
         cookies: prev.cookies - price,
         buildings: {
           ...prev.buildings,
-          [buildingId]: currentCount + 1,
+          [buildingId]: (prev.buildings[buildingId] || 0) + 1,
         },
       }));
     }
