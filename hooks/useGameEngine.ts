@@ -17,6 +17,7 @@ export const useGameEngine = () => {
   const gameStateRef = useRef(gameState);
   const goldenCookieTimer = useRef(0);
   const autoSaveTimer = useRef(0);
+  const lastTickRef = useRef(Date.now()); // Rastrear o tempo real para o Delta Time
 
   // Update ref when state changes
   useEffect(() => {
@@ -115,6 +116,8 @@ export const useGameEngine = () => {
         setGameState(INITIAL_STATE);
       }
     }
+    // Reset tick ref after load
+    lastTickRef.current = Date.now();
   }, []);
 
   // UPDATE TITLE WITH COOKIE COUNT
@@ -126,7 +129,6 @@ export const useGameEngine = () => {
   // SAVE ON WINDOW CLOSE/RELOAD
   useEffect(() => {
     const handleUnload = () => {
-        // Use ref to get the absolute latest state without triggering re-renders
         localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
     };
     window.addEventListener('beforeunload', handleUnload);
@@ -144,21 +146,36 @@ export const useGameEngine = () => {
     }
   }, []);
 
-  // Main Game Loop (10 ticks per second)
+  // Main Game Loop
   useEffect(() => {
-    const tickRate = 100; // ms
     const interval = setInterval(() => {
       const now = Date.now();
+      // Calculate Delta Time (time elapsed since last tick in ms)
+      const delta = now - lastTickRef.current;
+      lastTickRef.current = now;
 
       // Filter expired effects
       setActiveEffects(prev => prev.filter(e => e.endTime > now));
 
+      // Use Refs/Functional updates to avoid dependency cycles causing re-renders
+      // Note: We recalculate stats here using current state to ensure accuracy
+      const currentStats = calculateStats(gameStateRef.current, activeEffects); 
+      // NOTE: Using gameStateRef inside calculation loop might seem risky due to closure, 
+      // but activeEffects is state-driven.
+      // To be perfectly safe inside useEffect without dependencies, we rely on functional updates mostly,
+      // but calculateStats needs the complex object.
+      // Since we add calculateStats to dependency array, this effect re-runs on state change.
+      // The Delta Time logic (lastTickRef) persists across these re-runs, fixing the timing issues.
+      
       const { calculatedCps, calculatedClickValue } = calculateStats(gameState, activeEffects);
       setCps(calculatedCps);
       setClickValue(calculatedClickValue);
 
       setGameState((prev) => {
-        const cookiesEarned = calculatedCps / (1000 / tickRate);
+        // Production based on real time elapsed (Delta), not assumed frame rate
+        // CpS is per second, delta is ms. 
+        const cookiesEarned = (calculatedCps / 1000) * delta;
+        
         const newState = {
           ...prev,
           cookies: prev.cookies + cookiesEarned,
@@ -182,33 +199,32 @@ export const useGameEngine = () => {
         return newState;
       });
 
-      // Golden Cookie Logic
+      // Golden Cookie Logic (Time based)
       if (!goldenCookie) { 
-         // Fixed timer for golden cookie spawn (150 seconds = 150000ms)
-         goldenCookieTimer.current += tickRate;
-         if (goldenCookieTimer.current >= 150000) {
+         goldenCookieTimer.current += delta;
+         if (goldenCookieTimer.current >= 150000) { // 150 seconds
              spawnGoldenCookie();
              goldenCookieTimer.current = 0;
          }
       } else {
-         // Reset timer while active
          goldenCookieTimer.current = 0;
-
          setGoldenCookie(prev => {
             if (!prev) return null;
-            if (prev.life <= 0) return null;
-            return { ...prev, life: prev.life - (tickRate/1000) };
+            // Reduce life by delta seconds (delta is ms)
+            const newLife = prev.life - (delta / 1000);
+            if (newLife <= 0) return null;
+            return { ...prev, life: newLife };
          });
       }
 
-      // Auto Save Logic (Integrated into game loop)
-      autoSaveTimer.current += tickRate;
-      if (autoSaveTimer.current >= 30000) { // Every 30 seconds
+      // Auto Save Logic (Time based)
+      autoSaveTimer.current += delta;
+      if (autoSaveTimer.current >= 30000) { // 30 seconds
           saveGame();
           autoSaveTimer.current = 0;
       }
 
-    }, tickRate);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [gameState.buildings, gameState.upgrades, activeEffects, goldenCookie, calculateStats, saveGame]);
@@ -219,7 +235,7 @@ export const useGameEngine = () => {
      
      setGoldenCookie({
         active: true,
-        x: Math.random() * 80 + 10, // 10% to 90%
+        x: Math.random() * 80 + 10,
         y: Math.random() * 80 + 10,
         type: type as any,
         life: 13, // seconds
@@ -319,6 +335,7 @@ export const useGameEngine = () => {
       if(confirm("Tem certeza que deseja apagar todo o progresso?")) {
           localStorage.removeItem(SAVE_KEY);
           setGameState(INITIAL_STATE);
+          lastTickRef.current = Date.now(); // Reset timer
           window.location.reload();
       }
   }
