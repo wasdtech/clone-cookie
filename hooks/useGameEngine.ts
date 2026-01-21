@@ -17,23 +17,19 @@ export const useGameEngine = () => {
   const gameStateRef = useRef(gameState);
   const goldenCookieTimer = useRef(0);
   const autoSaveTimer = useRef(0);
-  const lastTickRef = useRef(Date.now()); // Rastrear o tempo real para o Delta Time
+  const lastTickRef = useRef(Date.now());
 
-  // Update ref when state changes
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  // Calculate current production stats
   const calculateStats = useCallback((state: GameState, effects: typeof activeEffects) => {
     let newCps = 0;
     
-    // Base CpS from buildings
     BUILDINGS.forEach((b) => {
       let buildingCps = b.baseCps;
       const count = state.buildings[b.id] || 0;
       
-      // Apply building upgrades
       state.upgrades.forEach((uId) => {
         const upgrade = UPGRADES.find(u => u.id === uId);
         if (upgrade?.type === 'building' && upgrade.targetId === b.id) {
@@ -44,7 +40,6 @@ export const useGameEngine = () => {
       newCps += buildingCps * count;
     });
 
-    // Apply global upgrades
     state.upgrades.forEach((uId) => {
       const upgrade = UPGRADES.find(u => u.id === uId);
       if (upgrade?.type === 'global') {
@@ -52,9 +47,7 @@ export const useGameEngine = () => {
       }
     });
 
-    // Base Click Value
     let newClickValue = 1;
-    // Apply Click Upgrades
     state.upgrades.forEach((uId) => {
         const upgrade = UPGRADES.find(u => u.id === uId);
         if (upgrade?.type === 'click') {
@@ -62,7 +55,6 @@ export const useGameEngine = () => {
         }
     });
 
-    // Apply Active Golden Cookie Effects
     effects.forEach(effect => {
       if (effect.type === 'frenzy') {
         newCps *= effect.multiplier;
@@ -75,26 +67,21 @@ export const useGameEngine = () => {
     return { calculatedCps: newCps, calculatedClickValue: newClickValue };
   }, []);
 
-  // Initialize & Load Save
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       try {
         const parsed: GameState = JSON.parse(saved);
-        // Migration: Ensure new fields exist
         if (!parsed.achievements) parsed.achievements = [];
         if (!parsed.manualClicks) parsed.manualClicks = 0;
         if (!parsed.bakeryName) parsed.bakeryName = "Padaria do Jogador";
 
-        // Calculate offline progress
         const now = Date.now();
         const secondsOffline = (now - parsed.lastSaveTime) / 1000;
         
-        // Need to calculate CpS for offline earnings
         let offlineCps = 0;
         BUILDINGS.forEach((b) => {
            let bCps = b.baseCps;
-           // Naive check for upgrades on load to calculate offline
            parsed.upgrades.forEach(uId => {
              const u = UPGRADES.find(up => up.id === uId);
              if (u?.type === 'building' && u.targetId === b.id) bCps *= u.multiplier;
@@ -104,7 +91,7 @@ export const useGameEngine = () => {
         });
 
         if (secondsOffline > 60) {
-            const earned = offlineCps * secondsOffline * 0.5; // 50% efficiency offline
+            const earned = offlineCps * secondsOffline * 0.5;
             parsed.cookies += earned;
             parsed.totalCookies += earned;
         }
@@ -112,21 +99,17 @@ export const useGameEngine = () => {
         setGameState({ ...parsed, lastSaveTime: now });
       } catch (e) {
         console.error("Save file corrupted", e);
-        // Fallback if safe fails significantly
         setGameState(INITIAL_STATE);
       }
     }
-    // Reset tick ref after load
     lastTickRef.current = Date.now();
   }, []);
 
-  // UPDATE TITLE WITH COOKIE COUNT
   useEffect(() => {
     const count = Math.floor(gameState.cookies).toLocaleString();
     document.title = `${count} biscoitos - Biscoito Clicker`;
   }, [gameState.cookies]);
 
-  // SAVE ON WINDOW CLOSE/RELOAD
   useEffect(() => {
     const handleUnload = () => {
         localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
@@ -135,7 +118,6 @@ export const useGameEngine = () => {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, []);
 
-  // Manual Save Function
   const saveGame = useCallback(() => {
     try {
         localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
@@ -146,26 +128,20 @@ export const useGameEngine = () => {
     }
   }, []);
 
-  // Main Game Loop
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      // Calculate Delta Time (time elapsed since last tick in ms)
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
 
-      // Filter expired effects
       setActiveEffects(prev => prev.filter(e => e.endTime > now));
 
-      // Use the actual state and effects to calculate current stats
       const { calculatedCps, calculatedClickValue } = calculateStats(gameState, activeEffects);
       setCps(calculatedCps);
       setClickValue(calculatedClickValue);
 
       setGameState((prev) => {
-        // Production based on real time elapsed (Delta), not assumed frame rate
         const cookiesEarned = (calculatedCps / 1000) * delta;
-        
         const newState = {
           ...prev,
           cookies: prev.cookies + cookiesEarned,
@@ -173,7 +149,6 @@ export const useGameEngine = () => {
           lastSaveTime: now,
         };
 
-        // Check Achievements
         const newAchievements: string[] = [];
         ACHIEVEMENTS.forEach(ach => {
             if (!newState.achievements.includes(ach.id) && ach.trigger(newState)) {
@@ -189,10 +164,9 @@ export const useGameEngine = () => {
         return newState;
       });
 
-      // Golden Cookie Logic (Time based)
       if (!goldenCookie) { 
          goldenCookieTimer.current += delta;
-         if (goldenCookieTimer.current >= 150000) { // 150 seconds
+         if (goldenCookieTimer.current >= 150000) {
              spawnGoldenCookie();
              goldenCookieTimer.current = 0;
          }
@@ -200,16 +174,14 @@ export const useGameEngine = () => {
          goldenCookieTimer.current = 0;
          setGoldenCookie(prev => {
             if (!prev) return null;
-            // Reduce life by delta seconds (delta is ms)
             const newLife = prev.life - (delta / 1000);
             if (newLife <= 0) return null;
             return { ...prev, life: newLife };
          });
       }
 
-      // Auto Save Logic (Time based)
       autoSaveTimer.current += delta;
-      if (autoSaveTimer.current >= 30000) { // 30 seconds
+      if (autoSaveTimer.current >= 30000) {
           saveGame();
           autoSaveTimer.current = 0;
       }
@@ -217,7 +189,7 @@ export const useGameEngine = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [gameState.buildings, gameState.upgrades, activeEffects, goldenCookie, calculateStats, saveGame, gameState]);
+  }, [gameState, activeEffects, goldenCookie, calculateStats, saveGame]);
 
   const spawnGoldenCookie = () => {
      const typeRoll = Math.random();
@@ -228,7 +200,7 @@ export const useGameEngine = () => {
         x: Math.random() * 80 + 10,
         y: Math.random() * 80 + 10,
         type: type as any,
-        life: 13, // seconds
+        life: 13,
      });
   };
 
@@ -325,7 +297,7 @@ export const useGameEngine = () => {
       if(confirm("Tem certeza que deseja apagar todo o progresso?")) {
           localStorage.removeItem(SAVE_KEY);
           setGameState(INITIAL_STATE);
-          lastTickRef.current = Date.now(); // Reset timer
+          lastTickRef.current = Date.now();
           window.location.reload();
       }
   }
