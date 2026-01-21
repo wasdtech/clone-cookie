@@ -134,14 +134,8 @@ export const useGameEngine = () => {
   };
 
   const ascend = () => {
-      const currentGain = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
-      // We only give the difference if we want cumulative, but usually roguelites simply add based on run.
-      // Cookie Clicker style: Heavenly Chips based on total lifetime.
-      // Let's make it simpler: You gain crystals based on THIS run's contribution + previous.
-      
-      // Actually, standard practice: Recalculate total level based on ALL TIME cookies.
-      // But we store 'prestigeLevel' as the currency. 
-      // Let's do: New Level = calculated - currentLevel.
+      // Logic simplified: Calculate potential level based on all time cookies,
+      // subtract current level to find gain.
       
       const potentialLevel = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
       const levelsToGain = Math.max(0, potentialLevel - gameStateRef.current.prestigeLevel);

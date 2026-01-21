@@ -16,8 +16,14 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
   const currentLevel = gameState.prestigeLevel;
   const potentialLevel = calculatePrestigeGain(gameState.lifetimeCookies);
   const levelsToGain = Math.max(0, potentialLevel - currentLevel);
-  const nextLevelCost = Math.pow((potentialLevel + 1), 2) * 1000000; // Reverse logic approx
-  const progress = Math.min(100, (gameState.lifetimeCookies / nextLevelCost) * 100);
+  // Simple approximation for next level cost just for the progress bar visualization
+  // Current logic implies levels ~ sqrt(cookies/1M). So cookies ~ level^2 * 1M.
+  const nextLevelRaw = potentialLevel + 1;
+  const nextLevelCookiesReq = Math.pow(nextLevelRaw, 2) * 1000000;
+  const currentLevelCookiesReq = Math.pow(potentialLevel, 2) * 1000000;
+  
+  // Progress within current level bracket
+  const progress = Math.min(100, Math.max(0, ((gameState.lifetimeCookies - currentLevelCookiesReq) / (nextLevelCookiesReq - currentLevelCookiesReq)) * 100));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
@@ -64,8 +70,16 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
                         </div>
                     </>
                 ) : (
-                    <div className="text-gray-400 italic py-2">
-                        Você precisa produzir mais biscoitos para ganhar cristais.
+                    <div className="text-gray-400 italic py-2 flex flex-col gap-2">
+                        <span>Produza mais biscoitos para ganhar cristais.</span>
+                        {/* Progress Bar for next crystal */}
+                        <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden relative mt-2">
+                             <div 
+                                className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]" 
+                                style={{ width: `${progress}%` }}
+                             />
+                        </div>
+                        <span className="text-[10px] text-indigo-300">{Math.floor(progress)}% para o próximo</span>
                     </div>
                 )}
             </div>

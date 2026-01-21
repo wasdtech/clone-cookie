@@ -8,7 +8,6 @@ import {
   Sparkles, 
   Atom,
   Trophy,
-  Cookie,
   Zap,
   Scroll,
   FlaskConical,
@@ -40,7 +39,7 @@ const generateBuildingUpgrades = (): Upgrade[] => {
   const upgrades: Upgrade[] = [];
   
   // Upgrades de Clique
-  [1, 50, 100, 500, 1000, 5000, 10000].forEach((req, idx) => {
+  [1, 50, 100, 500, 1000, 5000, 10000].forEach((_, idx) => {
      upgrades.push({
         id: `click_upgrade_${idx}`,
         name: `Clique Reforçado ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][idx] || idx}`,
@@ -131,7 +130,7 @@ const generateAchievements = (): Achievement[] => {
             name: `Fluxo ${['Lento', 'Rápido', 'Veloz', 'Sônico', 'Luz'][idx]}`,
             description: `Atinja ${amount.toLocaleString()} CpS.`,
             icon: Zap,
-            trigger: (state) => {
+            trigger: (_) => {
                 // Approximate check, real cps is in engine
                 // We use a simplified calculation or check passed state if expanded
                 return true; // Simplificado: A engine checa isso melhor
