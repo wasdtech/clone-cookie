@@ -10,12 +10,12 @@ interface Props {
 
 export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-800 border-l-8 border-gray-900 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-      <h3 className="text-center py-4 text-xl font-bold border-b border-gray-700 bg-gray-900 sticky top-0 z-10 shadow-md">
-        Loja
+    <div className="flex-1 overflow-y-auto bg-gray-800 border-l-0 border-t-4 border-indigo-600/50 scrollbar-thin scrollbar-thumb-indigo-900 scrollbar-track-gray-800 relative">
+      <h3 className="text-center py-3 text-sm font-bold border-b border-indigo-900/50 bg-gray-900/95 sticky top-0 z-10 shadow-md uppercase tracking-tighter text-indigo-400 backdrop-blur-sm">
+        Construções
       </h3>
       
-      <div className="flex flex-col pb-20">
+      <div className="flex flex-col pb-10">
         {BUILDINGS.map((building) => {
           const count = gameState.buildings[building.id] || 0;
           const cost = Math.floor(building.baseCost * Math.pow(1.15, count));
@@ -27,45 +27,45 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
               onClick={() => buyBuilding(building.id)}
               disabled={!canAfford}
               className={`
-                flex items-center p-4 border-b border-gray-700 transition-all duration-200 relative overflow-hidden group
+                flex items-center p-3 border-b border-gray-700/50 transition-all duration-200 relative overflow-hidden group
                 ${canAfford 
-                  ? 'hover:bg-gray-700 cursor-pointer' 
-                  : 'opacity-50 grayscale cursor-not-allowed bg-gray-800/50'}
+                  ? 'hover:bg-indigo-900/20 cursor-pointer' 
+                  : 'opacity-50 grayscale cursor-not-allowed bg-gray-800/30'}
               `}
             >
-              {/* Background fill for progress (visual flare) */}
               {canAfford && (
-                <div className="absolute inset-0 bg-white/5 w-0 group-hover:w-full transition-all duration-300" />
+                <div className="absolute inset-0 bg-indigo-500/5 w-0 group-hover:w-full transition-all duration-300" />
               )}
 
-              <div className="w-16 h-16 bg-gray-600 rounded-lg flex items-center justify-center mr-4 shadow-inner relative shrink-0">
-                 <building.icon size={32} className="text-amber-200" />
-                 <div className="absolute -top-2 -right-2 bg-black border border-gray-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold text-white z-10">
+              {/* Icon Container */}
+              <div className="w-14 h-14 bg-gray-700/50 rounded-lg flex items-center justify-center mr-4 shadow-inner relative shrink-0 border border-white/5 group-hover:border-indigo-400/30 transition-colors">
+                 <building.icon size={28} className="text-amber-100 drop-shadow-md" />
+                 <div className="absolute -top-2 -right-2 bg-indigo-600 border border-indigo-400 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold text-white z-10 shadow-lg">
                    {count}
                  </div>
               </div>
 
+              {/* Info */}
               <div className="flex-1 text-left">
                 <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-lg font-bold text-shadow-sm">{building.name}</span>
-                  <span className={`text-sm font-mono ${canAfford ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className="text-base font-bold text-shadow-sm text-gray-100 group-hover:text-white">{building.name}</span>
+                  <span className={`text-xs font-mono font-bold ${canAfford ? 'text-green-400' : 'text-red-400'}`}>
                     {cost.toLocaleString()}
                   </span>
                 </div>
-                <div className="text-xs text-gray-400">
-                  +{building.baseCps} CpS
-                </div>
-                <div className="text-xs text-gray-500 mt-1 italic line-clamp-1">
-                    {building.description}
+                <div className="text-[11px] text-gray-400 group-hover:text-gray-300 flex items-center gap-1">
+                  <span className="text-indigo-300">+{building.baseCps} CpS</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                  <span className="italic opacity-70 truncate max-w-[150px]">{building.description}</span>
                 </div>
               </div>
             </button>
           );
         })}
         
-        {/* Fill empty space */}
-        <div className="h-24 flex items-center justify-center text-gray-600 text-sm">
-            <Lock className="w-4 h-4 mr-2" /> Mais construções em breve
+        <div className="h-24 flex flex-col items-center justify-center text-gray-600 text-[10px] uppercase tracking-widest gap-2 opacity-50">
+            <Lock className="w-4 h-4" /> 
+            <span>Mais em breve...</span>
         </div>
       </div>
     </div>

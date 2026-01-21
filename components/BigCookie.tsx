@@ -20,7 +20,6 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
     setIsClicking(true);
     setTimeout(() => setIsClicking(false), 50);
 
-    // Randomize position slightly around the click
     const x = e.clientX + (Math.random() * 20 - 10);
     const y = e.clientY - 20 + (Math.random() * 20 - 10);
     
@@ -44,29 +43,29 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
       if (e.key === 'Escape') setIsEditingName(false);
   };
 
-  // SVG wave path data
-  const waveSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,202.7C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E";
+  const waveSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,192 C120,240 240,140 360,192 C480,244 600,280 720,192 C840,104 960,180 1080,192 C1200,204 1320,260 1440,192 L1440,320 L0,320 Z'%3E%3C/path%3E%3C/svg%3E";
 
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-gray-900 border-r-8 border-gray-800 relative shadow-2xl z-10 overflow-hidden">
+    <div className="h-full flex flex-col items-center justify-center bg-gray-900 relative z-10 overflow-hidden">
       
-      {/* Content Container (z-10 to sit above waves) */}
       <div className="relative z-10 flex flex-col items-center w-full">
-        <div className="text-center mb-12 select-none">
-          <h2 className="text-4xl font-bold text-white mb-2 bg-black/30 px-6 py-2 rounded-full border border-white/10 backdrop-blur-sm">
-            {Math.floor(gameState.cookies).toLocaleString()} <span className="text-xl text-gray-400">biscoitos</span>
+        <div className="text-center mb-8 select-none">
+          <h2 className="text-3xl font-bold text-white mb-1 bg-black/40 px-5 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-lg">
+            {Math.floor(gameState.cookies).toLocaleString()}
           </h2>
-          <p className="text-lg text-green-400 font-mono drop-shadow-md">por segundo: {cps.toFixed(1)}</p>
+          <div className="text-xs uppercase tracking-widest text-gray-500 mt-1">Biscoitos</div>
+          <p className="text-sm text-green-400 font-mono drop-shadow-md mt-2 bg-black/20 inline-block px-2 rounded">
+             {cps.toFixed(1)} / seg
+          </p>
         </div>
 
         <div className="relative group">
-          {/* Glow effect behind cookie */}
-          <div className="absolute inset-0 bg-amber-500/10 rounded-full filter blur-3xl scale-125 animate-pulse pointer-events-none"></div>
+          <div className="absolute inset-0 bg-amber-500/10 rounded-full filter blur-3xl scale-110 animate-pulse pointer-events-none"></div>
           
           <button
             onClick={handleClick}
             className={`
-              relative w-64 h-64 
+              relative w-48 h-48 
               transition-transform duration-75 outline-none select-none 
               cursor-pointer
               ${isClicking ? 'scale-95' : 'hover:scale-105 active:scale-95'}
@@ -75,13 +74,13 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
             <img 
                src="https://cdn-icons-png.flaticon.com/512/1047/1047711.png"
                alt="Big Cookie"
-               className="w-full h-full object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
+               className="w-full h-full object-contain drop-shadow-[0_10px_25px_rgba(0,0,0,0.6)]"
                draggable={false}
             />
           </button>
         </div>
         
-        <div className="mt-12 text-center text-white drop-shadow-sm h-10 flex items-center justify-center">
+        <div className="mt-8 text-center text-white drop-shadow-sm h-8 flex items-center justify-center">
           {isEditingName ? (
               <input 
                  autoFocus
@@ -91,7 +90,7 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
                  onBlur={handleSaveName}
                  onKeyDown={handleKeyDown}
                  maxLength={25}
-                 className="bg-black/50 border border-amber-500/50 rounded px-2 py-1 text-center font-bold text-amber-200 focus:outline-none focus:border-amber-400 w-64"
+                 className="bg-black/50 border border-amber-500/50 rounded px-2 py-0.5 text-center font-bold text-amber-200 focus:outline-none focus:border-amber-400 w-48 text-sm"
               />
           ) : (
               <div 
@@ -99,47 +98,52 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
                  onClick={handleStartEdit}
                  title="Clique para renomear"
               >
-                  <p className="opacity-60 text-sm font-medium">{gameState.bakeryName}</p>
-                  <Pencil size={12} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                  <p className="opacity-50 text-[10px] font-medium uppercase tracking-widest">{gameState.bakeryName}</p>
+                  <Pencil size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
               </div>
           )}
         </div>
       </div>
 
       {/* Milk Waves Container */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 w-full z-0 pointer-events-none">
-        {/* Wave 1: Back, Slow, Low Opacity */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 w-full z-0 pointer-events-none">
         <div 
-          className="absolute bottom-0 w-[200%] h-full animate-wave bg-repeat-x bg-bottom"
+          className="absolute bottom-0 w-[400%] h-full animate-wave bg-repeat-x bg-bottom"
           style={{ 
             backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '50% 100%',
-            animationDuration: '20s',
-            opacity: 0.1
+            backgroundSize: '25% 100%',
+            animationDuration: '25s',
+            opacity: 0.08
           }} 
         />
-        
-        {/* Wave 2: Middle, Medium Speed, Medium Opacity, Offset */}
         <div 
-          className="absolute -bottom-2 w-[200%] h-[90%] animate-wave bg-repeat-x bg-bottom"
+          className="absolute -bottom-4 w-[300%] h-[90%] animate-wave bg-repeat-x bg-bottom"
           style={{ 
             backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '50% 100%',
-            animationDuration: '15s',
-            animationDelay: '-2s',
-            opacity: 0.2
+            backgroundSize: '33% 100%',
+            animationDuration: '18s',
+            animationDelay: '-3s',
+            opacity: 0.15
           }} 
         />
-
-        {/* Wave 3: Front, Fast, Higher Opacity */}
         <div 
-          className="absolute -bottom-4 w-[200%] h-[80%] animate-wave bg-repeat-x bg-bottom"
+          className="absolute -bottom-8 w-[250%] h-[85%] animate-wave bg-repeat-x bg-bottom"
+          style={{ 
+            backgroundImage: `url("${waveSvg}")`,
+            backgroundSize: '40% 100%',
+            animationDuration: '12s',
+            animationDelay: '-7s',
+            opacity: 0.25
+          }} 
+        />
+        <div 
+          className="absolute -bottom-10 w-[200%] h-[75%] animate-wave bg-repeat-x bg-bottom"
           style={{ 
             backgroundImage: `url("${waveSvg}")`,
             backgroundSize: '50% 100%',
-            animationDuration: '10s',
-            animationDelay: '-5s',
-            opacity: 0.3
+            animationDuration: '8s',
+            animationDelay: '-1s',
+            opacity: 0.4
           }} 
         />
       </div>
