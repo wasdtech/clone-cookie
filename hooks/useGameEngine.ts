@@ -148,19 +148,14 @@ export const useGameEngine = () => {
         return newState;
       });
 
-      if (!goldenCookie) { 
-         goldenCookieTimer.current += delta;
-         if (goldenCookieTimer.current >= 120000) {
-             spawnGoldenCookie();
-             goldenCookieTimer.current = 0;
-         }
-      } else {
-         setGoldenCookie(prev => {
-            if (!prev) return null;
-            const newLife = prev.life - (delta / 1000);
-            if (newLife <= 0) return null;
-            return { ...prev, life: newLife };
-         });
+      if (!goldenCookieTimer.current) {
+          goldenCookieTimer.current = 0;
+      }
+
+      goldenCookieTimer.current += delta;
+      if (goldenCookieTimer.current >= 120000) {
+          spawnGoldenCookie();
+          goldenCookieTimer.current = 0;
       }
 
       autoSaveTimer.current += delta;
@@ -172,7 +167,20 @@ export const useGameEngine = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [calculateStats, saveGame, !!goldenCookie, goldenCookie]);
+  }, [calculateStats, saveGame]);
+
+  useEffect(() => {
+    if (goldenCookie) {
+        const timer = setInterval(() => {
+            setGoldenCookie(prev => {
+                if (!prev) return null;
+                const newLife = prev.life - 0.1;
+                return newLife <= 0 ? null : { ...prev, life: newLife };
+            });
+        }, 100);
+        return () => clearInterval(timer);
+    }
+  }, [!!goldenCookie]);
 
   const spawnGoldenCookie = () => {
      setGoldenCookie({
@@ -254,9 +262,13 @@ export const useGameEngine = () => {
     }
   };
 
+  const dismissNotification = (id: string) => {
+      setNotificationQueue(q => q.filter(n => n.id !== id));
+  };
+
   return {
     gameState, cps, clickValue, activeEffects, notificationQueue, isSaving,
     saveGame, buyBuilding, buyUpgrade, manualClick, resetGame,
-    goldenCookie, clickGoldenCookie, updateBakeryName, dismissNotification: (id: string) => setNotificationQueue(q => q.filter(n => n.id !== id))
+    goldenCookie, clickGoldenCookie, updateBakeryName, dismissNotification
   };
 };
