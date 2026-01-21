@@ -157,23 +157,13 @@ export const useGameEngine = () => {
       // Filter expired effects
       setActiveEffects(prev => prev.filter(e => e.endTime > now));
 
-      // Use Refs/Functional updates to avoid dependency cycles causing re-renders
-      // Note: We recalculate stats here using current state to ensure accuracy
-      const currentStats = calculateStats(gameStateRef.current, activeEffects); 
-      // NOTE: Using gameStateRef inside calculation loop might seem risky due to closure, 
-      // but activeEffects is state-driven.
-      // To be perfectly safe inside useEffect without dependencies, we rely on functional updates mostly,
-      // but calculateStats needs the complex object.
-      // Since we add calculateStats to dependency array, this effect re-runs on state change.
-      // The Delta Time logic (lastTickRef) persists across these re-runs, fixing the timing issues.
-      
+      // Use the actual state and effects to calculate current stats
       const { calculatedCps, calculatedClickValue } = calculateStats(gameState, activeEffects);
       setCps(calculatedCps);
       setClickValue(calculatedClickValue);
 
       setGameState((prev) => {
         // Production based on real time elapsed (Delta), not assumed frame rate
-        // CpS is per second, delta is ms. 
         const cookiesEarned = (calculatedCps / 1000) * delta;
         
         const newState = {
@@ -227,7 +217,7 @@ export const useGameEngine = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [gameState.buildings, gameState.upgrades, activeEffects, goldenCookie, calculateStats, saveGame]);
+  }, [gameState.buildings, gameState.upgrades, activeEffects, goldenCookie, calculateStats, saveGame, gameState]);
 
   const spawnGoldenCookie = () => {
      const typeRoll = Math.random();
