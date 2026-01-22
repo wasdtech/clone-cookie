@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GameState } from '../types';
 import { SKILLS } from '../constants';
-import { Sparkles, ArrowUpCircle, X, Lock } from 'lucide-react';
+import { Sparkles, X, Lock } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;

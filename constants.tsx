@@ -18,7 +18,6 @@ import {
   Clock,
   PiggyBank,
   Dna,
-  Hammer,
   Gem,
   Briefcase
 } from 'lucide-react';
