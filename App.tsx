@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { BigCookie } from './components/BigCookie';
 import { BuildingStore } from './components/BuildingStore';

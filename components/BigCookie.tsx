@@ -104,12 +104,12 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
         </div>
       </div>
 
-      {/* Container das ondas aumentado para permitir que fiquem mais altas */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 md:h-56 w-full z-0 pointer-events-none overflow-hidden">
-        {/* Camadas de ondas com posições bottom positivas para subirem na tela */}
-        <div className="absolute bottom-10 w-[400%] h-full animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '25% 100%', animationDuration: '25s', opacity: 0.05 }} />
-        <div className="absolute bottom-6 w-[300%] h-[95%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '33% 100%', animationDuration: '18s', animationDelay: '-3s', opacity: 0.1 }} />
-        <div className="absolute bottom-2 w-[250%] h-[90%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '40% 100%', animationDuration: '12s', animationDelay: '-7s', opacity: 0.2 }} />
+      {/* Container das ondas com altura aumentada para maior visibilidade */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 md:h-64 w-full z-0 pointer-events-none overflow-hidden">
+        {/* Camadas de ondas com posições bottom mais elevadas para preencher o fundo */}
+        <div className="absolute bottom-16 w-[400%] h-full animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '25% 100%', animationDuration: '25s', opacity: 0.05 }} />
+        <div className="absolute bottom-10 w-[300%] h-[95%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '33% 100%', animationDuration: '18s', animationDelay: '-3s', opacity: 0.1 }} />
+        <div className="absolute bottom-4 w-[250%] h-[90%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '40% 100%', animationDuration: '12s', animationDelay: '-7s', opacity: 0.2 }} />
         <div className="absolute bottom-0 w-[200%] h-[85%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '50% 100%', animationDuration: '8s', animationDelay: '-1s', opacity: 0.35 }} />
       </div>
 
