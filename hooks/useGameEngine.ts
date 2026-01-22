@@ -148,6 +148,14 @@ export const useGameEngine = () => {
       return Math.floor(cost);
   };
 
+  const getCumulativePrice = (buildingId: string, currentCount: number, skills: string[], amount: number) => {
+      let total = 0;
+      for (let i = 0; i < amount; i++) {
+          total += getBuildingPrice(buildingId, currentCount + i, skills);
+      }
+      return total;
+  };
+
   const ascend = () => {
       const totalPotentialLevel = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
       const spentOnSkills = gameStateRef.current.purchasedSkills.reduce((acc, skillId) => {
@@ -275,11 +283,15 @@ export const useGameEngine = () => {
     return message;
   };
 
-  const buyBuilding = (buildingId: string) => {
+  const buyBuilding = (buildingId: string, amount: number = 1) => {
     const count = gameState.buildings[buildingId] || 0;
-    const price = getBuildingPrice(buildingId, count, gameState.purchasedSkills);
+    const price = getCumulativePrice(buildingId, count, gameState.purchasedSkills, amount);
     if (gameState.cookies >= price) {
-      setGameState((prev) => ({ ...prev, cookies: prev.cookies - price, buildings: { ...prev.buildings, [buildingId]: count + 1 } }));
+      setGameState((prev) => ({ 
+          ...prev, 
+          cookies: prev.cookies - price, 
+          buildings: { ...prev.buildings, [buildingId]: count + amount } 
+      }));
     }
   };
 
@@ -297,5 +309,5 @@ export const useGameEngine = () => {
     return clickValue;
   };
 
-  return { gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, saveGame, buyBuilding, buyUpgrade, manualClick, resetGame, goldenCookie, clickGoldenCookie, updateBakeryName: (n:string) => setGameState(p=>({...p, bakeryName:n})), dismissNotification: (id:string)=>setNotificationQueue(q=>q.filter(n=>n.id!==id)), ascend, calculatePrestigeGain, buySkill };
+  return { gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, saveGame, buyBuilding, buyUpgrade, manualClick, resetGame, goldenCookie, clickGoldenCookie, getCumulativePrice, updateBakeryName: (n:string) => setGameState(p=>({...p, bakeryName:n})), dismissNotification: (id:string)=>setNotificationQueue(q=>q.filter(n=>n.id!==id)), ascend, calculatePrestigeGain, buySkill };
 };

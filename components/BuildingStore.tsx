@@ -1,51 +1,85 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { BUILDINGS } from '../constants';
 import { GameState } from '../types';
 import { Lock } from 'lucide-react';
 
 interface Props {
   gameState: GameState;
-  buyBuilding: (id: string) => void;
+  buyBuilding: (id: string, amount: number) => void;
 }
 
 export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
-  
-  const getDisplayPrice = (base: number, count: number) => {
-      // Usando baseCost * 1.15^count como no hook principal
-      let cost = Math.floor(base * Math.pow(1.15, count));
-      if (gameState.purchasedSkills.includes('divine_discount')) {
-          cost = Math.floor(cost * 0.9);
-      }
-      return cost;
+  const [buyAmount, setBuyAmount] = useState<1 | 10 | 100>(1);
+
+  const getBuildingPrice = (buildingId: string, currentCount: number, skills: string[]) => {
+      const building = BUILDINGS.find(b => b.id === buildingId);
+      if (!building) return 0;
+      let cost = Math.floor(building.baseCost * Math.pow(1.15, currentCount));
+      if (skills.includes('divine_discount')) cost = Math.floor(cost * 0.9);
+      skills.forEach(sid => {
+          if (sid.startsWith('eco_')) {
+              const val = parseInt(sid.split('_')[1]);
+              cost *= (1 - (val * 0.02));
+          }
+      });
+      return Math.floor(cost);
   };
 
-  // Cookie Clicker logic: show item if owned > 0 OR if lifetimeCookies >= baseCost * 0.7
+  const getCumulativeDisplayPrice = (buildingId: string, currentCount: number, amount: number) => {
+      let total = 0;
+      for (let i = 0; i < amount; i++) {
+          total += getBuildingPrice(buildingId, currentCount + i, gameState.purchasedSkills);
+      }
+      return total;
+  };
+
   const isBuildingVisible = (building: typeof BUILDINGS[0]) => {
       const count = gameState.buildings[building.id] || 0;
       if (count > 0) return true;
-      // Mostrar se o jogador já chegou perto do preço base alguma vez na vida
       return (gameState.lifetimeCookies || 0) >= building.baseCost * 0.7;
   };
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-800 border-l-0 border-t-4 border-indigo-600/50 scrollbar-thin scrollbar-thumb-indigo-900 scrollbar-track-gray-800 relative">
-      <h3 className="text-center py-3 text-sm font-bold border-b border-indigo-900/50 bg-gray-900/95 sticky top-0 z-10 shadow-md uppercase tracking-tighter text-indigo-400 backdrop-blur-sm">
-        Construções
-      </h3>
+      <div className="sticky top-0 z-20 bg-gray-900/95 border-b border-indigo-900/50 backdrop-blur-sm shadow-md flex items-center justify-between px-4 h-10">
+          {/* Seletor de Quantidade de Compra - Estilo Texto Alinhado à Esquerda */}
+          <div className="flex gap-4">
+              {[1, 10, 100].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setBuyAmount(amt as 1 | 10 | 100)}
+                    className={`
+                        text-[11px] font-bold transition-all duration-300 uppercase tracking-tight
+                        ${buyAmount === amt 
+                            ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] scale-110' 
+                            : 'text-gray-500 hover:text-gray-300'}
+                    `}
+                  >
+                    X{amt}
+                  </button>
+              ))}
+          </div>
+
+          <h3 className="absolute left-1/2 -translate-x-1/2 text-[11px] font-bold uppercase tracking-widest text-indigo-400 pointer-events-none">
+            Construções
+          </h3>
+          
+          <div className="w-16"></div> {/* Spacer para manter o título centralizado */}
+      </div>
       
       <div className="flex flex-col pb-10">
         {BUILDINGS.map((building) => {
           if (!isBuildingVisible(building)) return null;
 
           const count = gameState.buildings[building.id] || 0;
-          const cost = getDisplayPrice(building.baseCost, count);
+          const cost = getCumulativeDisplayPrice(building.id, count, buyAmount);
           const canAfford = gameState.cookies >= cost;
           
           return (
             <button
               key={building.id}
-              onClick={() => buyBuilding(building.id)}
+              onClick={() => buyBuilding(building.id, buyAmount)}
               disabled={!canAfford}
               className={`
                 flex items-center p-3 border-b border-gray-700/50 transition-all duration-200 relative overflow-hidden group
