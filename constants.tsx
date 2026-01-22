@@ -1,29 +1,13 @@
+
 import { 
-  MousePointer2, 
-  User, 
-  Wheat, 
-  Pickaxe, 
-  Factory, 
-  Landmark, 
-  Sparkles, 
-  Atom,
-  Trophy,
-  Zap,
-  Scroll,
-  FlaskConical,
-  DoorOpen,
-  Hourglass,
-  Rocket,
-  Crown,
-  Clock,
-  PiggyBank,
-  Dna,
-  Gem,
-  Briefcase
+  MousePointer2, User, Wheat, Pickaxe, Factory, Landmark, Sparkles, Atom, Trophy, Zap, Scroll, 
+  FlaskConical, DoorOpen, Hourglass, Rocket, Crown, Clock, PiggyBank, Dna, Gem, Briefcase,
+  Cpu, Activity, Ghost, Heart, Stars, Infinity, UserCircle, Microscope, ZapOff, Cloud, Shield,
+  Search, Map, Mail, Phone, Camera, Music, Video, Settings, Key, Wrench
 } from 'lucide-react';
 import { Building, Upgrade, Achievement, Skill } from './types';
 
-// --- CONSTRUÇÕES (Balanceadas para dificuldade maior) ---
+// --- CONSTRUÇÕES (20 TOTAL) ---
 export const BUILDINGS: Building[] = [
   { id: 'cursor', name: 'Cursor', baseCost: 15, baseCps: 0.1, description: 'Clica automaticamente uma vez a cada 10 segundos.', icon: MousePointer2 },
   { id: 'grandma', name: 'Vovó', baseCost: 100, baseCps: 1, description: 'Uma doce vovó para assar biscoitos.', icon: User },
@@ -38,138 +22,93 @@ export const BUILDINGS: Building[] = [
   { id: 'portal', name: 'Portal', baseCost: 1000000000000, baseCps: 10000000, description: 'Abre portais para o Biscoitoverso.', icon: DoorOpen },
   { id: 'time_machine', name: 'Máq. do Tempo', baseCost: 14000000000000, baseCps: 65000000, description: 'Traz biscoitos do passado.', icon: Hourglass },
   { id: 'prism', name: 'Prisma', baseCost: 170000000000000, baseCps: 430000000, description: 'Converte luz em biscoitos.', icon: Atom },
+  { id: 'antimatter', name: 'Cond. Antimatéria', baseCost: 2100000000000000, baseCps: 3100000000, description: 'Condensa o nada em biscoitos.', icon: Cpu },
+  { id: 'javascript', name: 'Console JS', baseCost: 26000000000000000, baseCps: 21000000000, description: 'Cria biscoitos com código puro.', icon: Activity },
+  { id: 'fractal', name: 'Motor Fractal', baseCost: 310000000000000000, baseCps: 150000000000, description: 'Biscoitos que fazem biscoitos.', icon: Infinity },
+  { id: 'chance', name: 'Gerador de Sorte', baseCost: 3800000000000000000, baseCps: 1100000000000, description: 'Manipula a probabilidade doce.', icon: Sparkles },
+  { id: 'idleverse', name: 'Ocioso-verso', baseCost: 46000000000000000000, baseCps: 8300000000000, description: 'Universos inteiros de biscoito.', icon: Stars },
+  { id: 'cortex', name: 'Padeiro Córtex', baseCost: 540000000000000000000, baseCps: 64000000000000, description: 'Sonha com biscoitos infinitos.', icon: Dna },
+  { id: 'you', name: 'Você', baseCost: 6500000000000000000000, baseCps: 510000000000000, description: 'Literalmente você fazendo biscoitos.', icon: UserCircle },
 ];
 
-// --- ARVORE DE HABILIDADES (Prestige Skills) ---
-export const SKILLS: Skill[] = [
-    // Tier 1 (Root)
-    {
-        id: 'heavenly_gates',
-        name: 'Portões Celestiais',
-        description: 'Desbloqueia o poder dos cristais. Aumenta CpS global em +10%.',
-        cost: 1,
-        icon: DoorOpen,
-        x: 50,
-        y: 90
-    },
-    // Tier 2 (Left - Economy)
-    {
-        id: 'divine_discount',
-        name: 'Desconto Divino',
-        description: 'Todas as construções custam 10% menos.',
-        cost: 3,
-        icon: PiggyBank,
-        x: 30,
-        y: 75,
-        parent: 'heavenly_gates'
-    },
-    // Tier 2 (Right - Active)
-    {
-        id: 'lucky_stars',
-        name: 'Sorte Celestial',
-        description: 'Cookies Dourados aparecem 20% mais frequentemente.',
-        cost: 3,
-        icon: Sparkles,
-        x: 70,
-        y: 75,
-        parent: 'heavenly_gates'
-    },
-    // Tier 3 (Left Branch)
-    {
-        id: 'pure_magic',
-        name: 'Magia Pura',
-        description: 'Melhorias (Upgrades) custam 20% menos.',
-        cost: 10,
-        icon: Gem,
-        x: 20,
-        y: 60,
-        parent: 'divine_discount'
-    },
-    {
-        id: 'time_warp',
-        name: 'Dobra Temporal',
-        description: 'Começa cada ascensão com cookies extras para acelerar o início.',
-        cost: 15,
-        icon: Clock,
-        x: 40,
-        y: 60,
-        parent: 'divine_discount'
-    },
-    // Tier 3 (Right Branch)
-    {
-        id: 'click_god',
-        name: 'Toque de Midas',
-        description: 'Seus cliques valem +5% do seu CpS atual.',
-        cost: 10,
-        icon: MousePointer2,
-        x: 60,
-        y: 60,
-        parent: 'lucky_stars'
-    },
-    {
-        id: 'golden_longevity',
-        name: 'Era Dourada',
-        description: 'Efeitos de Cookies Dourados duram 30% mais tempo.',
-        cost: 15,
-        icon: Hourglass,
-        x: 80,
-        y: 60,
-        parent: 'lucky_stars'
-    },
-    // Tier 4 (Convergence/Advanced)
-    {
-        id: 'legacy_starter',
-        name: 'Legado Familiar',
-        description: 'Começa ascensões com 10 Cursores e 5 Vovós grátis.',
-        cost: 25,
-        icon: Briefcase,
-        x: 30,
-        y: 40,
-        parent: 'time_warp'
-    },
-    {
-        id: 'synergy_1',
-        name: 'Sinergia Cósmica',
-        description: 'Prédios ganham +1% CpS para cada prédio diferente que você possui.',
-        cost: 30,
-        icon: Atom,
-        x: 70,
-        y: 40,
-        parent: 'click_god'
-    },
-    // Tier 5 (End Game)
-    {
-        id: 'angel_investor',
-        name: 'Investidor Anjo',
-        description: 'Ganhos offline aumentam para 90% de eficiência e duram 48h.',
-        cost: 50,
-        icon: Crown,
-        x: 50,
-        y: 25,
-        parent: 'heavenly_gates' // Visual shortcut, logically requires stronger progress
-    },
-    {
-        id: 'cookie_galaxy',
-        name: 'Galáxia Doce',
-        description: 'Bônus passivo de Cristais de Açúcar sobe de 5% para 7% por cristal.',
-        cost: 100,
-        icon: Dna,
-        x: 50,
-        y: 10,
-        parent: 'angel_investor'
+// --- ARVORE DE HABILIDADES (ESPAÇAMENTO ÉPICO) ---
+const generateSkills = (): Skill[] => {
+    // Escala: x 0-100 (horizontal), y 0-100 (vertical, onde 98 é o fundo e 2 é o topo)
+    const skills: Skill[] = [
+        { id: 'heavenly_gates', name: 'Portões Celestiais', description: 'Desbloqueia o poder dos cristais. +10% CpS global.', cost: 1, icon: DoorOpen, x: 50, y: 95 },
+    ];
+
+    // Branch Esquerda: Economia (Espaçamento horizontal maior)
+    const economyIcons = [PiggyBank, Gem, Briefcase, Key, Shield, Clock, Wrench, Settings, Crown, Heart, Ghost, Microscope];
+    for (let i = 1; i <= 12; i++) {
+        skills.push({
+            id: `eco_${i}`,
+            name: `Poder Econômico ${i}`,
+            description: `Reduz custos em ${i * 2}%.`,
+            cost: i * 5,
+            icon: economyIcons[i-1] || PiggyBank,
+            x: 35 - (i * 6), // Mais aberto para a esquerda
+            y: 90 - (i * 12), // Mais espaço vertical entre nós
+            parent: i === 1 ? 'heavenly_gates' : `eco_${i-1}`
+        });
     }
-];
 
-// --- GERADOR DE UPGRADES (Para criar volume e escala) ---
+    // Branch Direita: Sorte e Eventos
+    const luckIcons = [Sparkles, Stars, Zap, Search, Map, Mail, Phone, Camera, Music, Video, Activity, Cpu];
+    for (let i = 1; i <= 12; i++) {
+        skills.push({
+            id: `luck_${i}`,
+            name: `Caminho da Sorte ${i}`,
+            description: `Aumenta spawn de Cookies Dourados em ${i * 5}%.`,
+            cost: i * 5,
+            icon: luckIcons[i-1] || Sparkles,
+            x: 65 + (i * 6), // Mais aberto para a direita
+            y: 90 - (i * 12),
+            parent: i === 1 ? 'heavenly_gates' : `luck_${i-1}`
+        });
+    }
+
+    // Branch Central: Produção Pura
+    const prodIcons = [Zap, Infinity, Rocket, FlaskConical, Atom, Dna, Crown, UserCircle, Microscope, Cloud, Heart, Ghost];
+    for (let i = 1; i <= 12; i++) {
+        skills.push({
+            id: `prod_${i}`,
+            name: `Fluxo Vital ${i}`,
+            description: `Aumenta produção global em +${i * 3}%.`,
+            cost: i * 8,
+            icon: prodIcons[i-1] || Zap,
+            x: 50,
+            y: 80 - (i * 12),
+            parent: i === 1 ? 'heavenly_gates' : `prod_${i-1}`
+        });
+    }
+
+    // Especiais (Posicionadas estrategicamente nos espaços vazios)
+    skills.push({ id: 'divine_discount', name: 'Desconto Divino', description: 'Prédios custam 10% menos.', cost: 3, icon: PiggyBank, x: 25, y: 80, parent: 'heavenly_gates' });
+    skills.push({ id: 'lucky_stars', name: 'Sorte Celestial', description: 'Cookies Dourados 20% mais frequentes.', cost: 3, icon: Sparkles, x: 75, y: 80, parent: 'heavenly_gates' });
+    skills.push({ id: 'pure_magic', name: 'Magia Pura', description: 'Upgrades custam 20% menos.', cost: 10, icon: Gem, x: 15, y: 65, parent: 'divine_discount' });
+    skills.push({ id: 'time_warp', name: 'Dobra Temporal', description: 'Começa ascensões com 50k cookies.', cost: 15, icon: Clock, x: 30, y: 55, parent: 'divine_discount' });
+    skills.push({ id: 'click_god', name: 'Toque de Midas', description: 'Cliques valem +5% do CpS.', cost: 10, icon: MousePointer2, x: 70, y: 55, parent: 'lucky_stars' });
+    skills.push({ id: 'golden_longevity', name: 'Era Dourada', description: 'Efeitos dourados +30% tempo.', cost: 15, icon: Hourglass, x: 85, y: 65, parent: 'lucky_stars' });
+    
+    // Conectoras de Alto Nível (Subindo no mapa)
+    skills.push({ id: 'angel_investor', name: 'Investidor Anjo', description: 'Offline 90% eficiente por 48h.', cost: 50, icon: Crown, x: 50, y: 25, parent: 'prod_12' });
+    skills.push({ id: 'cookie_galaxy', name: 'Galáxia Doce', description: 'Bônus de Cristais sobe de 1% para 2%.', cost: 100, icon: Dna, x: 50, y: 15, parent: 'angel_investor' });
+    skills.push({ id: 'omega', name: 'Ponto Ômega', description: 'Produção global x2.0.', cost: 500, icon: ZapOff, x: 50, y: 5, parent: 'cookie_galaxy' });
+
+    return skills;
+};
+
+export const SKILLS: Skill[] = generateSkills();
+
+// --- GERADOR DE UPGRADES ---
 const generateBuildingUpgrades = (): Upgrade[] => {
   const upgrades: Upgrade[] = [];
-  
-  // Upgrades de Clique
-  [1, 50, 100, 500, 1000, 5000, 10000].forEach((_, idx) => {
+  [1, 50, 100, 500, 1000, 5000, 10000, 50000, 100000].forEach((_, idx) => {
      upgrades.push({
         id: `click_upgrade_${idx}`,
-        name: `Clique Reforçado ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][idx] || idx}`,
-        cost: 500 * Math.pow(10, idx),
+        name: `Clique Reforçado ${idx + 1}`,
+        cost: 500 * Math.pow(15, idx),
         type: 'click',
         multiplier: 2,
         description: 'Cliques manuais são 2x mais eficientes.',
@@ -177,120 +116,23 @@ const generateBuildingUpgrades = (): Upgrade[] => {
      });
   });
 
-  // Upgrades por Construção (Tiers)
   BUILDINGS.forEach((b) => {
-    const tiers = [
-      { count: 1, mult: 2, name: 'Básico' },
-      { count: 10, mult: 2, name: 'Robusto' },
-      { count: 25, mult: 2, name: 'Poderoso' },
-      { count: 50, mult: 2, name: 'Mítico' },
-      { count: 100, mult: 2, name: 'Lendário' },
-      { count: 150, mult: 2, name: 'Divino' },
-      { count: 200, mult: 2, name: 'Cósmico' },
-      { count: 250, mult: 20, name: 'Infinito' }, // Big jump
-    ];
-
+    const tiers = [{ count: 1, mult: 2, name: 'Básico' }, { count: 10, mult: 2, name: 'Robusto' }, { count: 25, mult: 2, name: 'Poderoso' }, { count: 50, mult: 2, name: 'Mítico' }, { count: 100, mult: 2, name: 'Lendário' }, { count: 150, mult: 2, name: 'Divino' }, { count: 200, mult: 5, name: 'Cósmico' }, { count: 300, mult: 10, name: 'Absoluto' }];
     tiers.forEach((tier, idx) => {
-      const cost = b.baseCost * 10 * Math.pow(5, idx);
-      upgrades.push({
-        id: `${b.id}_upgrade_${idx}`,
-        name: `${b.name} ${tier.name}`,
-        cost: Math.floor(cost),
-        type: 'building',
-        targetId: b.id,
-        multiplier: tier.mult,
-        description: `${b.name}s são ${tier.mult}x mais eficientes.`,
-        trigger: (_, buildings) => (buildings[b.id] || 0) >= tier.count,
-      });
+      const cost = b.baseCost * 10 * Math.pow(8, idx);
+      upgrades.push({ id: `${b.id}_upgrade_${idx}`, name: `${b.name} ${tier.name}`, cost: Math.floor(cost), type: 'building', targetId: b.id, multiplier: tier.mult, description: `${b.name}s são ${tier.mult}x mais eficientes.`, trigger: (_, buildings) => (buildings[b.id] || 0) >= tier.count });
     });
   });
-
-  // Upgrades Globais (Kitten/Cookie helpers)
-  const globalTiers = [
-      { cost: 1000000, mult: 1.1, name: "Receita Secreta" },
-      { cost: 50000000, mult: 1.15, name: "Açúcar Mágico" },
-      { cost: 1000000000, mult: 1.20, name: "Chocolate Puro" },
-      { cost: 50000000000, mult: 1.25, name: "Massa Quântica" },
-  ];
-  
-  globalTiers.forEach((tier, idx) => {
-      upgrades.push({
-          id: `global_upgrade_${idx}`,
-          name: tier.name,
-          cost: tier.cost,
-          type: 'global',
-          multiplier: tier.mult,
-          description: `Aumenta a produção de TODOS os prédios em +${Math.round((tier.mult - 1)*100)}%.`,
-          trigger: (cookies) => cookies >= tier.cost * 0.5,
-      });
-  });
-
   return upgrades;
 };
 
 export const UPGRADES: Upgrade[] = generateBuildingUpgrades();
 
-// --- CONQUISTAS ---
 const generateAchievements = (): Achievement[] => {
     const list: Achievement[] = [];
-
-    // Cookies Totais
-    const cookieMilestones = [1, 1000, 100000, 1000000, 1000000000, 1000000000000];
-    const cookieTitles = ["Primeiro Passo", "Fornada Caseira", "Fábrica Local", "Milionário", "Bilionário", "Trilionário"];
-    
-    cookieMilestones.forEach((amount, idx) => {
-        list.push({
-            id: `ach_cookie_${idx}`,
-            name: cookieTitles[idx] || `Magnata ${idx}`,
-            description: `Faça ${amount.toLocaleString()} biscoitos no total.`,
-            icon: Trophy,
-            trigger: (state) => state.totalCookies >= amount
-        });
+    [1, 1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21].forEach((amount, idx) => {
+        list.push({ id: `ach_cookie_${idx}`, name: `Milestone ${idx + 1}`, description: `Faça ${amount.toLocaleString()} biscoitos.`, icon: Trophy, trigger: (state) => state.totalCookies >= amount });
     });
-
-    // CpS Milestones
-    const cpsMilestones = [10, 100, 1000, 100000, 1000000];
-    cpsMilestones.forEach((amount, idx) => {
-         list.push({
-            id: `ach_cps_${idx}`,
-            name: `Fluxo ${['Lento', 'Rápido', 'Veloz', 'Sônico', 'Luz'][idx]}`,
-            description: `Atinja ${amount.toLocaleString()} CpS.`,
-            icon: Zap,
-            trigger: (_) => {
-                // Approximate check, real cps is in engine
-                // We use a simplified calculation or check passed state if expanded
-                return true; // Simplificado: A engine checa isso melhor
-            } 
-         });
-    });
-
-    // Building Milestones (1, 50, 100 of each)
-    BUILDINGS.forEach(b => {
-        list.push({
-            id: `ach_${b.id}_1`,
-            name: `Dono de ${b.name}`,
-            description: `Tenha 1 ${b.name}.`,
-            icon: b.icon,
-            trigger: (state) => (state.buildings[b.id] || 0) >= 1
-        });
-        list.push({
-            id: `ach_${b.id}_50`,
-            name: `${b.name} em Massa`,
-            description: `Tenha 50 ${b.name}s.`,
-            icon: b.icon,
-            trigger: (state) => (state.buildings[b.id] || 0) >= 50
-        });
-    });
-    
-    // Ascensão
-    list.push({
-        id: 'ach_ascension_1',
-        name: 'O Início do Fim',
-        description: 'Renascimento pela primeira vez.',
-        icon: Sparkles,
-        trigger: (state) => state.lifetimeCookies >= 1000000
-    });
-
     return list;
 };
 

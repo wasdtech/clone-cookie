@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GameState } from '../types';
 import { Pencil } from 'lucide-react';
@@ -32,9 +33,7 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
   };
 
   const handleSaveName = () => {
-      if (tempName.trim()) {
-          updateBakeryName(tempName);
-      }
+      if (tempName.trim()) updateBakeryName(tempName);
       setIsEditingName(false);
   };
 
@@ -46,15 +45,15 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
   const waveSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,192 C120,240 240,140 360,192 C480,244 600,280 720,192 C840,104 960,180 1080,192 C1200,204 1320,260 1440,192 L1440,320 L0,320 Z'%3E%3C/path%3E%3C/svg%3E";
 
   return (
-    <div className="h-full flex flex-col items-center justify-center bg-gray-900 relative z-10 overflow-hidden">
+    <div className="h-full flex flex-col items-center justify-center bg-gray-900 relative z-10 overflow-hidden pb-[var(--sab)]">
       
-      <div className="relative z-10 flex flex-col items-center w-full">
-        <div className="text-center mb-8 select-none">
-          <h2 className="text-3xl font-bold text-white mb-1 bg-black/40 px-5 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-lg">
+      <div className="relative z-10 flex flex-col items-center w-full px-4">
+        <div className="text-center mb-4 md:mb-8 select-none">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 bg-black/40 px-5 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-lg inline-block">
             {Math.floor(gameState.cookies).toLocaleString()}
           </h2>
-          <div className="text-xs uppercase tracking-widest text-gray-500 mt-1">Biscoitos</div>
-          <p className="text-sm text-green-400 font-mono drop-shadow-md mt-2 bg-black/20 inline-block px-2 rounded">
+          <div className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Biscoitos</div>
+          <p className="text-xs md:text-sm text-green-400 font-mono drop-shadow-md mt-2 bg-black/20 inline-block px-2 rounded">
              {cps.toFixed(1)} / seg
           </p>
         </div>
@@ -65,10 +64,10 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
           <button
             onClick={handleClick}
             className={`
-              relative w-48 h-48 
+              relative w-32 h-32 md:w-48 md:h-48 
               transition-transform duration-75 outline-none select-none 
               cursor-pointer
-              ${isClicking ? 'scale-95' : 'hover:scale-105 active:scale-95'}
+              ${isClicking ? 'scale-90' : 'hover:scale-105 active:scale-95'}
             `}
           >
             <img 
@@ -80,7 +79,7 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
           </button>
         </div>
         
-        <div className="mt-8 text-center text-white drop-shadow-sm h-8 flex items-center justify-center">
+        <div className="mt-6 md:mt-8 text-center text-white drop-shadow-sm h-8 flex items-center justify-center">
           {isEditingName ? (
               <input 
                  autoFocus
@@ -96,56 +95,19 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
               <div 
                  className="group flex items-center gap-2 px-3 py-1 rounded-full hover:bg-white/5 cursor-pointer transition-colors"
                  onClick={handleStartEdit}
-                 title="Clique para renomear"
               >
-                  <p className="opacity-50 text-[10px] font-medium uppercase tracking-widest">{gameState.bakeryName}</p>
+                  <p className="opacity-50 text-[9px] md:text-[10px] font-medium uppercase tracking-widest">{gameState.bakeryName}</p>
                   <Pencil size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
               </div>
           )}
         </div>
       </div>
 
-      {/* Milk Waves Container */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 w-full z-0 pointer-events-none">
-        <div 
-          className="absolute bottom-0 w-[400%] h-full animate-wave bg-repeat-x bg-bottom"
-          style={{ 
-            backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '25% 100%',
-            animationDuration: '25s',
-            opacity: 0.08
-          }} 
-        />
-        <div 
-          className="absolute -bottom-4 w-[300%] h-[90%] animate-wave bg-repeat-x bg-bottom"
-          style={{ 
-            backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '33% 100%',
-            animationDuration: '18s',
-            animationDelay: '-3s',
-            opacity: 0.15
-          }} 
-        />
-        <div 
-          className="absolute -bottom-8 w-[250%] h-[85%] animate-wave bg-repeat-x bg-bottom"
-          style={{ 
-            backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '40% 100%',
-            animationDuration: '12s',
-            animationDelay: '-7s',
-            opacity: 0.25
-          }} 
-        />
-        <div 
-          className="absolute -bottom-10 w-[200%] h-[75%] animate-wave bg-repeat-x bg-bottom"
-          style={{ 
-            backgroundImage: `url("${waveSvg}")`,
-            backgroundSize: '50% 100%',
-            animationDuration: '8s',
-            animationDelay: '-1s',
-            opacity: 0.4
-          }} 
-        />
+      <div className="absolute bottom-0 left-0 right-0 h-32 md:h-40 w-full z-0 pointer-events-none overflow-hidden">
+        <div className="absolute bottom-0 w-[400%] h-full animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '25% 100%', animationDuration: '25s', opacity: 0.08 }} />
+        <div className="absolute -bottom-4 w-[300%] h-[90%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '33% 100%', animationDuration: '18s', animationDelay: '-3s', opacity: 0.15 }} />
+        <div className="absolute -bottom-8 w-[250%] h-[85%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '40% 100%', animationDuration: '12s', animationDelay: '-7s', opacity: 0.25 }} />
+        <div className="absolute -bottom-10 w-[200%] h-[75%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '50% 100%', animationDuration: '8s', animationDelay: '-1s', opacity: 0.4 }} />
       </div>
 
     </div>
