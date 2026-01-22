@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { BigCookie } from './components/BigCookie';
 import { BuildingStore } from './components/BuildingStore';
@@ -9,11 +9,11 @@ import { EffectTimer } from './components/EffectTimer';
 import { AchievementsModal } from './components/AchievementsModal';
 import { PrestigeModal } from './components/PrestigeModal';
 import { FloatingText } from './types';
-import { Save, Trash2, Github, Trophy, Sparkles } from 'lucide-react';
+import { Save, Github, Trophy, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   const { 
-    gameState, cps, buyBuilding, buyUpgrade, manualClick, resetGame, saveGame,
+    gameState, cps, buyBuilding, buyUpgrade, manualClick, saveGame,
     goldenCookie, clickGoldenCookie, activeEffects, isSaving, updateBakeryName,
     ascend, calculatePrestigeGain, buySkill
   } = useGameEngine();
@@ -22,8 +22,6 @@ const App: React.FC = () => {
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   
-  const [sidebarWidth, setSidebarWidth] = useState(350);
-  const [isResizing, setIsResizing] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -44,7 +42,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`h-[100dvh] w-full bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans relative ${isResizing ? 'select-none' : ''}`}>
+    <div className={`h-[100dvh] w-full bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans relative`}>
       
       {isSaving && (
         <div className="fixed bottom-16 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 bg-green-900/90 border border-green-500 text-green-100 px-3 py-1 rounded shadow-2xl flex items-center gap-2 animate-[floatUp_0.5s_ease-out] z-[100] backdrop-blur-md text-xs">
@@ -60,7 +58,7 @@ const App: React.FC = () => {
 
       <div 
         className="flex-none z-10 bg-gray-900 relative shadow-[5px_0_20px_rgba(0,0,0,0.6)] flex flex-col border-b md:border-b-0 md:border-r border-gray-800 pt-[var(--sat)]"
-        style={!isMobile ? { width: sidebarWidth } : { height: '38%' }}
+        style={!isMobile ? { width: '350px' } : { height: '38%' }}
       >
         <div className="absolute top-2 left-2 text-[10px] text-gray-500 z-50 flex gap-2 flex-wrap bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm select-none mt-[var(--sat)]">
             <span onClick={() => window.open('https://github.com/google/genai', '_blank')} className="hover:text-white cursor-pointer"><Github size={12}/></span>

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GameState } from '../types';
 import { SKILLS } from '../constants';
 import { Sparkles, X, Lock, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
