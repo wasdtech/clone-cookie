@@ -9,6 +9,17 @@ interface Props {
 }
 
 export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
+  
+  // Logic duplicated from hook for display purposes, ideal would be to pass a helper
+  // But for XML simplicity we keep it inline here matching the hook logic
+  const getDisplayPrice = (base: number, count: number) => {
+      let cost = Math.floor(base * Math.pow(1.22, count));
+      if (gameState.purchasedSkills.includes('divine_discount')) {
+          cost = Math.floor(cost * 0.9);
+      }
+      return cost;
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-gray-800 border-l-0 border-t-4 border-indigo-600/50 scrollbar-thin scrollbar-thumb-indigo-900 scrollbar-track-gray-800 relative">
       <h3 className="text-center py-3 text-sm font-bold border-b border-indigo-900/50 bg-gray-900/95 sticky top-0 z-10 shadow-md uppercase tracking-tighter text-indigo-400 backdrop-blur-sm">
@@ -18,8 +29,7 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
       <div className="flex flex-col pb-10">
         {BUILDINGS.map((building) => {
           const count = gameState.buildings[building.id] || 0;
-          // Updated exponent to 1.22 to match engine
-          const cost = Math.floor(building.baseCost * Math.pow(1.22, count));
+          const cost = getDisplayPrice(building.baseCost, count);
           const canAfford = gameState.cookies >= cost;
           
           return (

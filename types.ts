@@ -20,6 +20,17 @@ export interface Upgrade {
   trigger: (cookies: number, buildings: Record<string, number>) => boolean;
 }
 
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  cost: number; // Custo em Cristais de Açúcar (Prestige Levels)
+  icon: LucideIcon;
+  x: number; // Posição visual X (0-100%)
+  y: number; // Posição visual Y (0-100%)
+  parent?: string; // ID do pai para desenhar linhas e travar
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -36,10 +47,11 @@ export interface GameState {
   buildings: Record<string, number>;
   upgrades: string[];
   achievements: string[];
+  purchasedSkills: string[]; // Habilidades de prestígio compradas
   lastSaveTime: number;
   startTime: number;
   bakeryName: string;
-  prestigeLevel: number; // Nível de ascensão (Cristais)
+  prestigeLevel: number; // Nível de ascensão (Cristais GASTÁVEIS/ATUAIS)
 }
 
 export interface FloatingText {

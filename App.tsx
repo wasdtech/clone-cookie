@@ -25,7 +25,8 @@ const App: React.FC = () => {
     isSaving,
     updateBakeryName,
     ascend,
-    calculatePrestigeGain
+    calculatePrestigeGain,
+    buySkill
   } = useGameEngine();
 
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
@@ -102,6 +103,7 @@ const App: React.FC = () => {
           gameState={gameState}
           calculatePrestigeGain={calculatePrestigeGain}
           onAscend={ascend}
+          buySkill={buySkill}
       />
 
       {/* Visual Effects Overlay */}

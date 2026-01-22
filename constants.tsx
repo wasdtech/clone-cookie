@@ -13,9 +13,16 @@ import {
   FlaskConical,
   DoorOpen,
   Hourglass,
-  Rocket
+  Rocket,
+  Crown,
+  Clock,
+  PiggyBank,
+  Dna,
+  Hammer,
+  Gem,
+  Briefcase
 } from 'lucide-react';
-import { Building, Upgrade, Achievement } from './types';
+import { Building, Upgrade, Achievement, Skill } from './types';
 
 // --- CONSTRUÇÕES (Balanceadas para dificuldade maior) ---
 export const BUILDINGS: Building[] = [
@@ -32,6 +39,126 @@ export const BUILDINGS: Building[] = [
   { id: 'portal', name: 'Portal', baseCost: 1000000000000, baseCps: 10000000, description: 'Abre portais para o Biscoitoverso.', icon: DoorOpen },
   { id: 'time_machine', name: 'Máq. do Tempo', baseCost: 14000000000000, baseCps: 65000000, description: 'Traz biscoitos do passado.', icon: Hourglass },
   { id: 'prism', name: 'Prisma', baseCost: 170000000000000, baseCps: 430000000, description: 'Converte luz em biscoitos.', icon: Atom },
+];
+
+// --- ARVORE DE HABILIDADES (Prestige Skills) ---
+export const SKILLS: Skill[] = [
+    // Tier 1 (Root)
+    {
+        id: 'heavenly_gates',
+        name: 'Portões Celestiais',
+        description: 'Desbloqueia o poder dos cristais. Aumenta CpS global em +10%.',
+        cost: 1,
+        icon: DoorOpen,
+        x: 50,
+        y: 90
+    },
+    // Tier 2 (Left - Economy)
+    {
+        id: 'divine_discount',
+        name: 'Desconto Divino',
+        description: 'Todas as construções custam 10% menos.',
+        cost: 3,
+        icon: PiggyBank,
+        x: 30,
+        y: 75,
+        parent: 'heavenly_gates'
+    },
+    // Tier 2 (Right - Active)
+    {
+        id: 'lucky_stars',
+        name: 'Sorte Celestial',
+        description: 'Cookies Dourados aparecem 20% mais frequentemente.',
+        cost: 3,
+        icon: Sparkles,
+        x: 70,
+        y: 75,
+        parent: 'heavenly_gates'
+    },
+    // Tier 3 (Left Branch)
+    {
+        id: 'pure_magic',
+        name: 'Magia Pura',
+        description: 'Melhorias (Upgrades) custam 20% menos.',
+        cost: 10,
+        icon: Gem,
+        x: 20,
+        y: 60,
+        parent: 'divine_discount'
+    },
+    {
+        id: 'time_warp',
+        name: 'Dobra Temporal',
+        description: 'Começa cada ascensão com cookies extras para acelerar o início.',
+        cost: 15,
+        icon: Clock,
+        x: 40,
+        y: 60,
+        parent: 'divine_discount'
+    },
+    // Tier 3 (Right Branch)
+    {
+        id: 'click_god',
+        name: 'Toque de Midas',
+        description: 'Seus cliques valem +5% do seu CpS atual.',
+        cost: 10,
+        icon: MousePointer2,
+        x: 60,
+        y: 60,
+        parent: 'lucky_stars'
+    },
+    {
+        id: 'golden_longevity',
+        name: 'Era Dourada',
+        description: 'Efeitos de Cookies Dourados duram 30% mais tempo.',
+        cost: 15,
+        icon: Hourglass,
+        x: 80,
+        y: 60,
+        parent: 'lucky_stars'
+    },
+    // Tier 4 (Convergence/Advanced)
+    {
+        id: 'legacy_starter',
+        name: 'Legado Familiar',
+        description: 'Começa ascensões com 10 Cursores e 5 Vovós grátis.',
+        cost: 25,
+        icon: Briefcase,
+        x: 30,
+        y: 40,
+        parent: 'time_warp'
+    },
+    {
+        id: 'synergy_1',
+        name: 'Sinergia Cósmica',
+        description: 'Prédios ganham +1% CpS para cada prédio diferente que você possui.',
+        cost: 30,
+        icon: Atom,
+        x: 70,
+        y: 40,
+        parent: 'click_god'
+    },
+    // Tier 5 (End Game)
+    {
+        id: 'angel_investor',
+        name: 'Investidor Anjo',
+        description: 'Ganhos offline aumentam para 90% de eficiência e duram 48h.',
+        cost: 50,
+        icon: Crown,
+        x: 50,
+        y: 25,
+        parent: 'heavenly_gates' // Visual shortcut, logically requires stronger progress
+    },
+    {
+        id: 'cookie_galaxy',
+        name: 'Galáxia Doce',
+        description: 'Bônus passivo de Cristais de Açúcar sobe de 5% para 7% por cristal.',
+        cost: 100,
+        icon: Dna,
+        x: 50,
+        y: 10,
+        parent: 'angel_investor'
+    }
 ];
 
 // --- GERADOR DE UPGRADES (Para criar volume e escala) ---
@@ -162,7 +289,7 @@ const generateAchievements = (): Achievement[] => {
         name: 'O Início do Fim',
         description: 'Renascimento pela primeira vez.',
         icon: Sparkles,
-        trigger: (state) => state.prestigeLevel > 0
+        trigger: (state) => state.lifetimeCookies >= 1000000
     });
 
     return list;
@@ -178,6 +305,7 @@ export const INITIAL_STATE: import('./types').GameState = {
   buildings: {},
   upgrades: [],
   achievements: [],
+  purchasedSkills: [],
   lastSaveTime: Date.now(),
   startTime: Date.now(),
   bakeryName: "Padaria do Jogador",
