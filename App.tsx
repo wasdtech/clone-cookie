@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { BigCookie } from './components/BigCookie';
 import { BuildingStore } from './components/BuildingStore';
@@ -9,11 +9,11 @@ import { EffectTimer } from './components/EffectTimer';
 import { AchievementsModal } from './components/AchievementsModal';
 import { PrestigeModal } from './components/PrestigeModal';
 import { FloatingText } from './types';
-import { Save, Github, Trophy, Sparkles } from 'lucide-react';
+import { Save, Github, Trophy, Sparkles, Settings, Trash2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const { 
-    gameState, cps, buyBuilding, buyUpgrade, manualClick, saveGame,
+    gameState, cps, buyBuilding, buyUpgrade, manualClick, saveGame, resetGame,
     goldenCookie, clickGoldenCookie, activeEffects, isSaving, updateBakeryName,
     ascend, calculatePrestigeGain, buySkill
   } = useGameEngine();
@@ -21,14 +21,43 @@ const App: React.FC = () => {
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sidebarWidth, setSidebarWidth] = useState(350);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const startResizing = useCallback(() => {
+      setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+      setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e: MouseEvent) => {
+      if (isResizing) {
+          const newWidth = e.clientX;
+          if (newWidth > 200 && newWidth < window.innerWidth * 0.7) {
+              setSidebarWidth(newWidth);
+          }
+      }
+  }, [isResizing]);
+
+  useEffect(() => {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+      return () => {
+          window.removeEventListener('mousemove', resize);
+          window.removeEventListener('mouseup', stopResizing);
+      };
+  }, [resize, stopResizing]);
 
   const addFloatingText = useCallback((x: number, y: number, text: string, color?: string) => {
     const id = Date.now() + Math.random();
@@ -42,13 +71,38 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`h-[100dvh] w-full bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans relative`}>
+    <div className={`h-[100dvh] w-full bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans relative ${isResizing ? 'cursor-col-resize select-none' : ''}`}>
       
       {isSaving && (
         <div className="fixed bottom-16 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 bg-green-900/90 border border-green-500 text-green-100 px-3 py-1 rounded shadow-2xl flex items-center gap-2 animate-[floatUp_0.5s_ease-out] z-[100] backdrop-blur-md text-xs">
            <Save size={12} className="animate-bounce" />
            <span className="font-bold">Salvo!</span>
         </div>
+      )}
+
+      {/* Settings Modal Simplificado */}
+      {isSettingsOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-gray-800 border-2 border-indigo-600 rounded-lg shadow-2xl w-full max-w-sm p-6">
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">Configurações <Settings size={20}/></h2>
+                  <p className="text-sm text-gray-400 mb-6">Gerencie seu progresso e opções do jogo.</p>
+                  
+                  <div className="space-y-4">
+                      <button 
+                        onClick={resetGame}
+                        className="w-full flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-900 border border-red-500 text-red-100 py-3 rounded-lg transition-colors font-bold"
+                      >
+                        <Trash2 size={18} /> Apagar Tudo (Reset)
+                      </button>
+                      <button 
+                        onClick={() => setIsSettingsOpen(false)}
+                        className="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-lg transition-colors"
+                      >
+                        Voltar
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
 
       <AchievementsModal isOpen={isAchievementsOpen} onClose={() => setIsAchievementsOpen(false)} gameState={gameState} />
@@ -58,13 +112,14 @@ const App: React.FC = () => {
 
       <div 
         className="flex-none z-10 bg-gray-900 relative shadow-[5px_0_20px_rgba(0,0,0,0.6)] flex flex-col border-b md:border-b-0 md:border-r border-gray-800 pt-[var(--sat)]"
-        style={!isMobile ? { width: '350px' } : { height: '38%' }}
+        style={!isMobile ? { width: `${sidebarWidth}px` } : { height: '38%' }}
       >
         <div className="absolute top-2 left-2 text-[10px] text-gray-500 z-50 flex gap-2 flex-wrap bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm select-none mt-[var(--sat)]">
             <span onClick={() => window.open('https://github.com/google/genai', '_blank')} className="hover:text-white cursor-pointer"><Github size={12}/></span>
-            <span onClick={() => setIsAchievementsOpen(true)} className="text-amber-600 cursor-pointer"><Trophy size={10} /></span>
-            <span onClick={() => setIsPrestigeOpen(true)} className="text-purple-600 cursor-pointer"><Sparkles size={10} /></span>
-            <span onClick={saveGame} className="text-green-600 cursor-pointer"><Save size={10} /></span>
+            <span onClick={() => setIsAchievementsOpen(true)} className="text-amber-600 cursor-pointer hover:scale-110 transition-transform"><Trophy size={10} /></span>
+            <span onClick={() => setIsPrestigeOpen(true)} className="text-purple-600 cursor-pointer hover:scale-110 transition-transform"><Sparkles size={10} /></span>
+            <span onClick={() => setIsSettingsOpen(true)} className="text-indigo-400 cursor-pointer hover:scale-110 transition-transform"><Settings size={10} /></span>
+            <span onClick={saveGame} className="text-green-600 cursor-pointer hover:scale-110 transition-transform"><Save size={10} /></span>
         </div>
 
         <EffectTimer effects={activeEffects} />
@@ -76,6 +131,14 @@ const App: React.FC = () => {
         )}
 
         <BigCookie onCookieClick={manualClick} gameState={gameState} cps={cps} addFloatingText={addFloatingText} updateBakeryName={updateBakeryName} />
+
+        {/* Resizer Handle */}
+        {!isMobile && (
+            <div 
+              onMouseDown={startResizing}
+              className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500/50 transition-colors z-50 ${isResizing ? 'bg-indigo-600' : ''}`}
+            />
+        )}
       </div>
 
       <div className="flex-1 flex flex-col h-full bg-gray-800 z-10 relative min-w-0 overflow-hidden">

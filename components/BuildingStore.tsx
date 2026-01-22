@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BUILDINGS } from '../constants';
 import { GameState } from '../types';
@@ -10,14 +11,21 @@ interface Props {
 
 export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
   
-  // Logic duplicated from hook for display purposes, ideal would be to pass a helper
-  // But for XML simplicity we keep it inline here matching the hook logic
   const getDisplayPrice = (base: number, count: number) => {
-      let cost = Math.floor(base * Math.pow(1.22, count));
+      // Usando baseCost * 1.15^count como no hook principal
+      let cost = Math.floor(base * Math.pow(1.15, count));
       if (gameState.purchasedSkills.includes('divine_discount')) {
           cost = Math.floor(cost * 0.9);
       }
       return cost;
+  };
+
+  // Cookie Clicker logic: show item if owned > 0 OR if lifetimeCookies >= baseCost * 0.7
+  const isBuildingVisible = (building: typeof BUILDINGS[0]) => {
+      const count = gameState.buildings[building.id] || 0;
+      if (count > 0) return true;
+      // Mostrar se o jogador já chegou perto do preço base alguma vez na vida
+      return (gameState.lifetimeCookies || 0) >= building.baseCost * 0.7;
   };
 
   return (
@@ -28,6 +36,8 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
       
       <div className="flex flex-col pb-10">
         {BUILDINGS.map((building) => {
+          if (!isBuildingVisible(building)) return null;
+
           const count = gameState.buildings[building.id] || 0;
           const cost = getDisplayPrice(building.baseCost, count);
           const canAfford = gameState.cookies >= cost;
@@ -51,9 +61,11 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
               {/* Icon Container */}
               <div className="w-14 h-14 bg-gray-700/50 rounded-lg flex items-center justify-center mr-4 shadow-inner relative shrink-0 border border-white/5 group-hover:border-indigo-400/30 transition-colors">
                  <building.icon size={28} className="text-amber-100 drop-shadow-md" />
-                 <div className="absolute -top-2 -right-2 bg-indigo-600 border border-indigo-400 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold text-white z-10 shadow-lg">
-                   {count}
-                 </div>
+                 {count > 0 && (
+                     <div className="absolute -top-2 -right-2 bg-indigo-600 border border-indigo-400 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold text-white z-10 shadow-lg">
+                       {count}
+                     </div>
+                 )}
               </div>
 
               {/* Info */}

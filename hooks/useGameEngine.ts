@@ -56,7 +56,6 @@ export const useGameEngine = () => {
     if (state.purchasedSkills.includes('meta_1')) newCps *= 1.5;
     if (state.purchasedSkills.includes('omega')) newCps *= 2.0;
 
-    // AJUSTE PRESTÍGIO: 1% base, 2% com Cookie Galaxy
     const crystalEffectiveness = state.purchasedSkills.includes('cookie_galaxy') ? 0.02 : 0.01;
     const prestigeMultiplier = 1 + (state.prestigeLevel * crystalEffectiveness);
     newCps *= prestigeMultiplier;
@@ -118,6 +117,16 @@ export const useGameEngine = () => {
         setIsSaving(true);
         setTimeout(() => setIsSaving(false), 2000);
     } catch (e) { console.error("Falha ao salvar", e); }
+  }, []);
+
+  const resetGame = useCallback(() => {
+      if (confirm("TEM CERTEZA? Isso apagará TODO o seu progresso permanentemente!")) {
+          localStorage.removeItem(SAVE_KEY);
+          setGameState(INITIAL_STATE);
+          setActiveEffects([]);
+          setGoldenCookie(null);
+          window.location.reload();
+      }
   }, []);
 
   const calculatePrestigeGain = (lifetimeCookies: number) => {
@@ -288,5 +297,5 @@ export const useGameEngine = () => {
     return clickValue;
   };
 
-  return { gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, saveGame, buyBuilding, buyUpgrade, manualClick, resetGame: () => {}, goldenCookie, clickGoldenCookie, updateBakeryName: (n:string) => setGameState(p=>({...p, bakeryName:n})), dismissNotification: (id:string)=>setNotificationQueue(q=>q.filter(n=>n.id!==id)), ascend, calculatePrestigeGain, buySkill };
+  return { gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, saveGame, buyBuilding, buyUpgrade, manualClick, resetGame, goldenCookie, clickGoldenCookie, updateBakeryName: (n:string) => setGameState(p=>({...p, bakeryName:n})), dismissNotification: (id:string)=>setNotificationQueue(q=>q.filter(n=>n.id!==id)), ascend, calculatePrestigeGain, buySkill };
 };

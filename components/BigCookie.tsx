@@ -42,7 +42,8 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
       if (e.key === 'Escape') setIsEditingName(false);
   };
 
-  const waveSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,192 C120,240 240,140 360,192 C480,244 600,280 720,192 C840,104 960,180 1080,192 C1200,204 1320,260 1440,192 L1440,320 L0,320 Z'%3E%3C/path%3E%3C/svg%3E";
+  // SVG de onda refinado para melhor visualização
+  const waveSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='1' d='M0,160 C120,200 240,120 360,160 C480,200 600,240 720,160 C840,80 960,160 1080,160 C1200,160 1320,240 1440,160 L1440,320 L0,320 Z'%3E%3C/path%3E%3C/svg%3E";
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-gray-900 relative z-10 overflow-hidden pb-[var(--sab)]">
@@ -103,11 +104,13 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 md:h-40 w-full z-0 pointer-events-none overflow-hidden">
-        <div className="absolute bottom-0 w-[400%] h-full animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '25% 100%', animationDuration: '25s', opacity: 0.08 }} />
-        <div className="absolute -bottom-4 w-[300%] h-[90%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '33% 100%', animationDuration: '18s', animationDelay: '-3s', opacity: 0.15 }} />
-        <div className="absolute -bottom-8 w-[250%] h-[85%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '40% 100%', animationDuration: '12s', animationDelay: '-7s', opacity: 0.25 }} />
-        <div className="absolute -bottom-10 w-[200%] h-[75%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '50% 100%', animationDuration: '8s', animationDelay: '-1s', opacity: 0.4 }} />
+      {/* Container das ondas aumentado para permitir que fiquem mais altas */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 md:h-56 w-full z-0 pointer-events-none overflow-hidden">
+        {/* Camadas de ondas com posições bottom positivas para subirem na tela */}
+        <div className="absolute bottom-10 w-[400%] h-full animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '25% 100%', animationDuration: '25s', opacity: 0.05 }} />
+        <div className="absolute bottom-6 w-[300%] h-[95%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '33% 100%', animationDuration: '18s', animationDelay: '-3s', opacity: 0.1 }} />
+        <div className="absolute bottom-2 w-[250%] h-[90%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '40% 100%', animationDuration: '12s', animationDelay: '-7s', opacity: 0.2 }} />
+        <div className="absolute bottom-0 w-[200%] h-[85%] animate-wave bg-repeat-x bg-bottom" style={{ backgroundImage: `url("${waveSvg}")`, backgroundSize: '50% 100%', animationDuration: '8s', animationDelay: '-1s', opacity: 0.35 }} />
       </div>
 
     </div>
