@@ -142,7 +142,8 @@ const App: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col h-full bg-gray-800 z-10 relative min-w-0 overflow-hidden">
-        <div className="h-auto z-20 shadow-xl border-b-2 border-amber-700 bg-gray-800 shrink-0">
+        {/* Container das Melhorias com Z-INDEX ALTO para a tooltip flutuar sobre a loja */}
+        <div className="h-auto z-30 shadow-xl border-b-2 border-amber-700 bg-gray-800 shrink-0">
              <div className="bg-amber-950/30 text-center py-2 text-amber-500 text-base md:text-lg font-bold cookie-font tracking-widest flex justify-center relative shadow-inner border-b border-amber-900/50">
                 {gameState.bakeryName.toUpperCase()}
                 {gameState.prestigeLevel > 0 && (
@@ -154,7 +155,10 @@ const App: React.FC = () => {
              <UpgradesPanel gameState={gameState} buyUpgrade={buyUpgrade} />
         </div>
 
-        <BuildingStore gameState={gameState} buyBuilding={buyBuilding} />
+        {/* Container da Loja com Z-INDEX MENOR que as melhorias */}
+        <div className="flex-1 min-h-0 z-10">
+          <BuildingStore gameState={gameState} buyBuilding={buyBuilding} />
+        </div>
 
         <div className="h-8 md:h-6 bg-gray-900 border-t border-gray-700 flex items-center justify-between px-3 text-[9px] text-gray-500 shrink-0 pb-[var(--sab)]">
              <span>Auto-save: 30s</span>
