@@ -265,19 +265,38 @@ export const useGameEngine = () => {
     if (!goldenCookie) return;
     let message = "";
     const now = Date.now();
-    const multiplier = gameState.purchasedSkills.includes('golden_longevity') ? 1.3 : 1.0;
+    const multiplierBonus = gameState.purchasedSkills.includes('golden_longevity') ? 1.3 : 1.0;
+
     if (goldenCookie.type === 'lucky') {
         const gain = Math.min(gameState.cookies * 0.15 + 13, cps * 900 + 13);
         setGameState(prev => ({ ...prev, cookies: prev.cookies + gain, totalCookies: prev.totalCookies + gain, lifetimeCookies: prev.lifetimeCookies + gain }));
         message = `Sortudo! +${Math.floor(gain)}`;
-    } else if (goldenCookie.type === 'frenzy') {
-        const dur = 77000 * multiplier;
-        setActiveEffects(prev => [...prev, { type: 'frenzy', label: 'Frenesi (x7)', multiplier: 7, endTime: now + dur, duration: dur }]);
-        message = "Frenesi x7!";
-    } else if (goldenCookie.type === 'clickfrenzy') {
-        const dur = 13000 * multiplier;
-        setActiveEffects(prev => [...prev, { type: 'clickfrenzy', label: 'Click Power (x777)', multiplier: 777, endTime: now + dur, duration: dur }]);
-        message = "Poder de Clique!";
+    } else {
+        const type = goldenCookie.type;
+        const baseDuration = type === 'frenzy' ? 77000 : 13000;
+        const baseMult = type === 'frenzy' ? 7 : 777;
+        const labelBase = type === 'frenzy' ? 'Frenesi' : 'Click Power';
+        const dur = baseDuration * multiplierBonus;
+
+        setActiveEffects(prev => {
+            const existingIndex = prev.findIndex(e => e.type === type);
+            if (existingIndex !== -1) {
+                const updated = [...prev];
+                const old = updated[existingIndex];
+                // Acumular: Multiplicar o poder e somar o tempo restante
+                const newMult = old.multiplier * baseMult;
+                updated[existingIndex] = {
+                    ...old,
+                    multiplier: newMult,
+                    endTime: old.endTime + dur,
+                    duration: old.duration + dur,
+                    label: `${labelBase} (x${newMult})`
+                };
+                return updated;
+            }
+            return [...prev, { type, label: `${labelBase} (x${baseMult})`, multiplier: baseMult, endTime: now + dur, duration: dur }];
+        });
+        message = type === 'frenzy' ? "Frenesi Acumulado!" : "Poder Acumulado!";
     }
     setGoldenCookie(null);
     return message;
