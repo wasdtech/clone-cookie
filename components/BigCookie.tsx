@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { GameState } from '../types';
 import { Pencil } from 'lucide-react';
+import { AnimatedNumber } from './AnimatedNumber';
 
 interface Props {
   onCookieClick: () => number;
@@ -50,8 +51,8 @@ export const BigCookie: React.FC<Props> = ({ onCookieClick, gameState, cps, addF
       
       <div className="relative z-10 flex flex-col items-center w-full px-4">
         <div className="text-center mb-4 md:mb-8 select-none">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 bg-black/40 px-5 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-lg inline-block">
-            {Math.floor(gameState.cookies).toLocaleString()}
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 bg-black/40 px-5 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-lg inline-block min-w-[150px]">
+            <AnimatedNumber value={gameState.cookies} />
           </h2>
           <div className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Biscoitos</div>
           <p className="text-xs md:text-sm text-green-400 font-mono drop-shadow-md mt-2 bg-black/20 inline-block px-2 rounded">
