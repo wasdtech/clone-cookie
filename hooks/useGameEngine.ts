@@ -130,8 +130,9 @@ export const useGameEngine = () => {
   }, []);
 
   const calculatePrestigeGain = (lifetimeCookies: number) => {
-      if (lifetimeCookies < 1000000) return 0;
-      return Math.floor(Math.sqrt(lifetimeCookies / 1000000));
+      // NERF: Alterado de 1.000.000 para 10.000.000 para dificultar a ascensão
+      if (lifetimeCookies < 10000000) return 0;
+      return Math.floor(Math.sqrt(lifetimeCookies / 10000000));
   };
 
   const getBuildingPrice = (buildingId: string, currentCount: number, skills: string[]) => {
@@ -274,7 +275,8 @@ export const useGameEngine = () => {
     } else {
         const type = goldenCookie.type;
         const baseDuration = type === 'frenzy' ? 77000 : 13000;
-        const baseMult = type === 'frenzy' ? 7 : 777;
+        // NERF: Multiplicador de Click Frenzy reduzido de 777 para 100
+        const baseMult = type === 'frenzy' ? 7 : 100;
         const labelBase = type === 'frenzy' ? 'Frenesi' : 'Click Power';
         const dur = baseDuration * multiplierBonus;
 
