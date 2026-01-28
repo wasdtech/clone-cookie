@@ -38,39 +38,48 @@ const generateSkills = (): Skill[] => {
         { id: 'heavenly_gates', name: 'Portões Celestiais', description: 'Desbloqueia o poder dos cristais. +10% CpS global.', cost: 1, icon: DoorOpen, x: 50, y: 95 },
     ];
 
-    // Branch Esquerda: Economia (Espaçamento horizontal maior)
+    const branchLength = 12;
+    const startY = 88;
+    const gapY = 5.5; // Distância vertical entre nós
+    const curveIntensity = 30; // O quão "larga" a árvore fica
+
+    // Ícones para cada ramo
     const economyIcons = [PiggyBank, Gem, Briefcase, Key, Shield, Clock, Wrench, Settings, Crown, Heart, Ghost, Microscope];
-    for (let i = 1; i <= 12; i++) {
+    const luckIcons = [Sparkles, Stars, Zap, Search, Map, Mail, Phone, Camera, Music, Video, Activity, Cpu];
+    const prodIcons = [Zap, Infinity, Rocket, FlaskConical, Atom, Dna, Crown, UserCircle, Microscope, Cloud, Heart, Ghost];
+
+    for (let i = 1; i <= branchLength; i++) {
+        // Cálculo de Curva: Math.sin para criar um arco suave
+        // Normalizamos 'i' entre 0 e 1 para aplicar na curva
+        const progress = i / branchLength;
+        const widthOffset = Math.sin(progress * Math.PI * 0.8) * curveIntensity;
+        const currentY = startY - ((i - 1) * gapY);
+
+        // Branch Esquerda: Economia (X < 50)
         skills.push({
             id: `eco_${i}`,
             name: `Poder Econômico ${i}`,
             description: `Reduz custos em ${i * 2}%.`,
             cost: i * 5,
             icon: economyIcons[i-1] || PiggyBank,
-            x: 35 - (i * 6), // Mais aberto para a esquerda
-            y: 90 - (i * 12), // Mais espaço vertical entre nós
+            x: 50 - 10 - widthOffset, // Começa um pouco a esquerda e abre
+            y: currentY,
             parent: i === 1 ? 'heavenly_gates' : `eco_${i-1}`
         });
-    }
 
-    // Branch Direita: Sorte e Eventos
-    const luckIcons = [Sparkles, Stars, Zap, Search, Map, Mail, Phone, Camera, Music, Video, Activity, Cpu];
-    for (let i = 1; i <= 12; i++) {
+        // Branch Direita: Sorte (X > 50)
         skills.push({
             id: `luck_${i}`,
             name: `Caminho da Sorte ${i}`,
             description: `Aumenta spawn de Cookies Dourados em ${i * 5}%.`,
             cost: i * 5,
             icon: luckIcons[i-1] || Sparkles,
-            x: 65 + (i * 6), // Mais aberto para a direita
-            y: 90 - (i * 12),
+            x: 50 + 10 + widthOffset, // Começa um pouco a direita e abre
+            y: currentY,
             parent: i === 1 ? 'heavenly_gates' : `luck_${i-1}`
         });
-    }
 
-    // Branch Central: Produção Pura
-    const prodIcons = [Zap, Infinity, Rocket, FlaskConical, Atom, Dna, Crown, UserCircle, Microscope, Cloud, Heart, Ghost];
-    for (let i = 1; i <= 12; i++) {
+        // Branch Central: Produção Pura (X = 50) - Sobe reto
         skills.push({
             id: `prod_${i}`,
             name: `Fluxo Vital ${i}`,
@@ -78,23 +87,34 @@ const generateSkills = (): Skill[] => {
             cost: i * 8,
             icon: prodIcons[i-1] || Zap,
             x: 50,
-            y: 80 - (i * 12),
+            y: currentY - 2, // Ligeiramente deslocado para cima para criar um padrão de diamante com os lados
             parent: i === 1 ? 'heavenly_gates' : `prod_${i-1}`
         });
     }
 
-    // Especiais (Posicionadas estrategicamente nos espaços vazios)
-    skills.push({ id: 'divine_discount', name: 'Desconto Divino', description: 'Prédios custam 10% menos.', cost: 3, icon: PiggyBank, x: 25, y: 80, parent: 'heavenly_gates' });
-    skills.push({ id: 'lucky_stars', name: 'Sorte Celestial', description: 'Cookies Dourados 20% mais frequentes.', cost: 3, icon: Sparkles, x: 75, y: 80, parent: 'heavenly_gates' });
-    skills.push({ id: 'pure_magic', name: 'Magia Pura', description: 'Upgrades custam 20% menos.', cost: 10, icon: Gem, x: 15, y: 65, parent: 'divine_discount' });
-    skills.push({ id: 'time_warp', name: 'Dobra Temporal', description: 'Começa ascensões com 50k cookies.', cost: 15, icon: Clock, x: 30, y: 55, parent: 'divine_discount' });
-    skills.push({ id: 'click_god', name: 'Toque de Midas', description: 'Cliques valem +5% do CpS.', cost: 10, icon: MousePointer2, x: 70, y: 55, parent: 'lucky_stars' });
-    skills.push({ id: 'golden_longevity', name: 'Era Dourada', description: 'Efeitos dourados +30% tempo.', cost: 15, icon: Hourglass, x: 85, y: 65, parent: 'lucky_stars' });
+    // --- ESPECIAIS (INTERSTÍCIOS) ---
+    // Colocados estrategicamente entre os ramos para conectar visualmente
     
-    // Conectoras de Alto Nível (Subindo no mapa)
-    skills.push({ id: 'angel_investor', name: 'Investidor Anjo', description: 'Offline 90% eficiente por 48h.', cost: 50, icon: Crown, x: 50, y: 25, parent: 'prod_12' });
-    skills.push({ id: 'cookie_galaxy', name: 'Galáxia Doce', description: 'Bônus de Cristais sobe de 1% para 2%.', cost: 100, icon: Dna, x: 50, y: 15, parent: 'angel_investor' });
-    skills.push({ id: 'omega', name: 'Ponto Ômega', description: 'Produção global x2.0.', cost: 500, icon: ZapOff, x: 50, y: 5, parent: 'cookie_galaxy' });
+    // Nível Baixo (Entre os ramos iniciais)
+    skills.push({ id: 'divine_discount', name: 'Desconto Divino', description: 'Prédios custam 10% menos.', cost: 3, icon: PiggyBank, x: 38, y: 82, parent: 'heavenly_gates' });
+    skills.push({ id: 'lucky_stars', name: 'Sorte Celestial', description: 'Cookies Dourados 20% mais frequentes.', cost: 3, icon: Sparkles, x: 62, y: 82, parent: 'heavenly_gates' });
+    
+    // Nível Médio (Conexões cruzadas)
+    skills.push({ id: 'pure_magic', name: 'Magia Pura', description: 'Upgrades custam 20% menos.', cost: 10, icon: Gem, x: 30, y: 60, parent: 'eco_4' });
+    skills.push({ id: 'time_warp', name: 'Dobra Temporal', description: 'Começa ascensões com 50k cookies.', cost: 15, icon: Clock, x: 70, y: 60, parent: 'luck_4' });
+    
+    // Nível Alto (Perto do topo dos ramos)
+    skills.push({ id: 'click_god', name: 'Toque de Midas', description: 'Cliques valem +5% do CpS.', cost: 10, icon: MousePointer2, x: 35, y: 40, parent: 'eco_8' });
+    skills.push({ id: 'golden_longevity', name: 'Era Dourada', description: 'Efeitos dourados +30% tempo.', cost: 15, icon: Hourglass, x: 65, y: 40, parent: 'luck_8' });
+    
+    // --- ENDGAME (Topo da Árvore - Centralizado) ---
+    const topY = 15;
+    
+    skills.push({ id: 'angel_investor', name: 'Investidor Anjo', description: 'Offline 90% eficiente por 48h.', cost: 50, icon: Crown, x: 50, y: topY + 8, parent: 'prod_12' });
+    
+    skills.push({ id: 'cookie_galaxy', name: 'Galáxia Doce', description: 'Bônus de Cristais sobe de 1% para 2%.', cost: 100, icon: Dna, x: 50, y: topY, parent: 'angel_investor' });
+    
+    skills.push({ id: 'omega', name: 'Ponto Ômega', description: 'Produção global x2.0.', cost: 500, icon: ZapOff, x: 50, y: topY - 10, parent: 'cookie_galaxy' });
 
     return skills;
 };

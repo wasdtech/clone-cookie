@@ -11,6 +11,12 @@ import { PrestigeModal } from './components/PrestigeModal';
 import { FloatingText } from './types';
 import { Save, Github, Trophy, Sparkles, Settings, Trash2 } from 'lucide-react';
 
+interface BurstEffect {
+    id: number;
+    x: number;
+    y: number;
+}
+
 const App: React.FC = () => {
   const { 
     gameState, cps, buyBuilding, buyUpgrade, manualClick, saveGame, resetGame,
@@ -19,6 +25,7 @@ const App: React.FC = () => {
   } = useGameEngine();
 
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+  const [gcEffects, setGcEffects] = useState<BurstEffect[]>([]); // Estado para efeitos visuais do GC
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isPrestigeOpen, setIsPrestigeOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -67,12 +74,53 @@ const App: React.FC = () => {
   const handleGoldenCookieClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       const msg = clickGoldenCookie();
+      
+      // Visual Effects Logic
+      const burstId = Date.now();
+      setGcEffects(prev => [...prev, { id: burstId, x: e.clientX, y: e.clientY }]);
+      // Remover efeito após a animação (1s)
+      setTimeout(() => {
+          setGcEffects(prev => prev.filter(eff => eff.id !== burstId));
+      }, 1000);
+
       if (msg) addFloatingText(e.clientX, e.clientY, msg, '#ffd700');
   }
 
   return (
     <div className={`h-[100dvh] w-full bg-black text-white flex flex-col md:flex-row overflow-hidden font-sans relative ${isResizing ? 'cursor-col-resize select-none' : ''}`}>
       
+      {/* Golden Cookie Burst Effects Layer */}
+      {gcEffects.map(effect => (
+          <div key={effect.id} className="fixed pointer-events-none z-[100]" style={{ left: effect.x, top: effect.y }}>
+              {/* Shockwave Ring */}
+              <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-amber-300 animate-[shockwave-expand_0.6s_ease-out_forwards]"></div>
+              
+              {/* Particles */}
+              {Array.from({ length: 12 }).map((_, i) => {
+                  const angle = (i / 12) * 360;
+                  const rad = angle * (Math.PI / 180);
+                  const distance = 100 + Math.random() * 50;
+                  const tx = Math.cos(rad) * distance;
+                  const ty = Math.sin(rad) * distance;
+                  
+                  return (
+                      <div 
+                        key={i}
+                        className="absolute top-0 left-0 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_gold]"
+                        style={{
+                            '--tx': `${tx}px`,
+                            '--ty': `${ty}px`,
+                            animation: `particle-explode 0.8s ease-out forwards ${Math.random() * 0.1}s`
+                        } as React.CSSProperties}
+                      >
+                         {/* Optional Star Shape inside particle */}
+                         <div className="w-full h-full bg-white opacity-50 rounded-full animate-ping"></div>
+                      </div>
+                  );
+              })}
+          </div>
+      ))}
+
       {isSaving && (
         <div className="fixed bottom-16 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 bg-green-900/90 border border-green-500 text-green-100 px-3 py-1 rounded shadow-2xl flex items-center gap-2 animate-[floatUp_0.5s_ease-out] z-[100] backdrop-blur-md text-xs">
            <Save size={12} className="animate-bounce" />
@@ -126,7 +174,11 @@ const App: React.FC = () => {
 
         {goldenCookie && (
             <button onClick={handleGoldenCookieClick} className="absolute w-12 h-12 md:w-16 md:h-16 z-50 cursor-pointer animate-bounce" style={{ left: `${goldenCookie.x}%`, top: `${goldenCookie.y}%`, animation: 'spin 4s linear infinite' }}>
-                <div className="w-full h-full rounded-full bg-yellow-400 border-2 border-yellow-200 shadow-[0_0_20px_rgba(255,215,0,0.6)] flex items-center justify-center text-xl">🌟</div>
+                <div className="w-full h-full rounded-full bg-yellow-400 border-2 border-yellow-200 shadow-[0_0_20px_rgba(255,215,0,0.6)] flex items-center justify-center text-xl hover:bg-yellow-300 transition-colors">
+                    🌟
+                </div>
+                {/* Glow behind cookie */}
+                <div className="absolute inset-0 bg-yellow-500 rounded-full blur-xl opacity-50 animate-pulse -z-10"></div>
             </button>
         )}
 

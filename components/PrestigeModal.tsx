@@ -24,7 +24,7 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   
   // Transform State for Pan & Zoom
-  const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 0.6 });
+  const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 0.5 }); // Scale ajustado para 0.5 para ver mais da árvore
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,11 +33,13 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
   useEffect(() => {
     if (activeTab === 'tree' && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        // Centrar horizontalmente e focar na parte de baixo (y alto)
+        // Centralizar na árvore (2500px de largura)
+        // Árvore tem 4000px de altura. Queremos focar no fundo (y~100%).
+        const initialScale = 0.5;
         setTransform({
-            x: (rect.width / 2) - (1250 * 0.6), // Metade do container menos metade da largura da árvore * escala
-            y: rect.height - (4000 * 0.6) + 100, // Fundo da árvore
-            scale: 0.6
+            x: (rect.width / 2) - ((2500 * initialScale) / 2), // Centraliza horizontalmente o canvas da árvore
+            y: rect.height - (4000 * initialScale) + 50, // Foca na parte inferior
+            scale: initialScale
         });
     }
   }, [activeTab]);
@@ -94,10 +96,11 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
   const resetView = () => {
     if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
+        const initialScale = 0.5;
         setTransform({
-            x: (rect.width / 2) - (1250 * 0.6),
-            y: rect.height - (4000 * 0.6) + 100,
-            scale: 0.6
+            x: (rect.width / 2) - ((2500 * initialScale) / 2),
+            y: rect.height - (4000 * initialScale) + 50,
+            scale: initialScale
         });
     }
   };
@@ -112,10 +115,17 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
   const potentialLevel = calculatePrestigeGain(gameState.lifetimeCookies);
   const levelsToGain = Math.max(0, potentialLevel - totalOwned);
   
+  // FIX: Atualizado para 10.000.000 para corresponder ao hook useGameEngine
+  const PRESTIGE_DIVISOR = 10000000;
   const nextLevelRaw = potentialLevel + 1;
-  const nextLevelCookiesReq = Math.pow(nextLevelRaw, 2) * 1000000;
-  const currentLevelCookiesReq = Math.pow(potentialLevel, 2) * 1000000;
-  const progress = Math.min(100, Math.max(0, ((gameState.lifetimeCookies - currentLevelCookiesReq) / (nextLevelCookiesReq - currentLevelCookiesReq)) * 100));
+  const nextLevelCookiesReq = Math.pow(nextLevelRaw, 2) * PRESTIGE_DIVISOR;
+  const currentLevelCookiesReq = Math.pow(potentialLevel, 2) * PRESTIGE_DIVISOR;
+  
+  // Prevenir divisão por zero ou números negativos no primeiro nível
+  const denominator = nextLevelCookiesReq - currentLevelCookiesReq;
+  const progress = denominator > 0 
+    ? Math.min(100, Math.max(0, ((gameState.lifetimeCookies - currentLevelCookiesReq) / denominator) * 100))
+    : 0;
 
   const selectedSkill = selectedSkillId ? SKILLS.find(s => s.id === selectedSkillId) : null;
   const canBuySelected = selectedSkill ? (!gameState.purchasedSkills.includes(selectedSkill.id) && (!selectedSkill.parent || gameState.purchasedSkills.includes(selectedSkill.parent)) && gameState.prestigeLevel >= selectedSkill.cost) : false;
@@ -189,7 +199,7 @@ export const PrestigeModal: React.FC<Props> = ({ isOpen, onClose, gameState, cal
                                 <div className="w-full h-4 bg-gray-900 rounded-full overflow-hidden relative border border-white/5">
                                     <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_15px_rgba(99,102,241,0.6)] transition-all duration-700" style={{ width: `${progress}%` }} />
                                 </div>
-                                <div className="text-[10px] text-indigo-400 mt-3 font-bold uppercase tracking-widest">{Math.floor(progress)}% pronto</div>
+                                <div className="text-[10px] text-indigo-400 mt-3 font-bold uppercase tracking-widest">{Math.floor(progress)}% para o próximo cristal</div>
                             </div>
                         )}
                     </div>
