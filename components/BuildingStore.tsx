@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { BUILDINGS } from '../constants';
 import { GameState } from '../types';
 import { Lock } from 'lucide-react';
+import { formatNumber } from '../utils/formatting';
 
 interface Props {
   gameState: GameState;
@@ -41,34 +42,32 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-gray-800 border-l-0 border-t-4 border-indigo-600/50 scrollbar-thin scrollbar-thumb-indigo-900 scrollbar-track-gray-800 relative">
-      <div className="sticky top-0 z-20 bg-gray-900/95 border-b border-indigo-900/50 backdrop-blur-sm shadow-md flex items-center justify-between px-4 h-10">
-          {/* Seletor de Quantidade de Compra - Estilo Texto Alinhado à Esquerda */}
-          <div className="flex gap-4">
+    <div className="flex-1 h-full overflow-y-auto bg-gray-900 border-l-0 border-t-2 border-indigo-500/20 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent relative">
+      <div className="sticky top-0 z-20 bg-gray-900/95 border-b border-gray-800 backdrop-blur-md shadow-lg flex items-center justify-between px-4 h-12">
+          {/* Multiplier Toggle */}
+          <div className="flex bg-gray-800/80 rounded-lg p-1 border border-gray-700">
               {[1, 10, 100].map((amt) => (
                   <button
                     key={amt}
                     onClick={() => setBuyAmount(amt as 1 | 10 | 100)}
                     className={`
-                        text-[11px] font-bold transition-all duration-300 uppercase tracking-tight
+                        px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-200 uppercase tracking-wider
                         ${buyAmount === amt 
-                            ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.9)] scale-110' 
-                            : 'text-gray-500 hover:text-gray-300'}
+                            ? 'bg-indigo-600 text-white shadow-md' 
+                            : 'text-gray-400 hover:text-white hover:bg-gray-700'}
                     `}
                   >
-                    X{amt}
+                    x{amt}
                   </button>
               ))}
           </div>
 
-          <h3 className="absolute left-1/2 -translate-x-1/2 text-[11px] font-bold uppercase tracking-widest text-indigo-400 pointer-events-none">
-            Construções
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            Loja
           </h3>
-          
-          <div className="w-16"></div> {/* Spacer para manter o título centralizado */}
       </div>
       
-      <div className="flex flex-col pb-10">
+      <div className="flex flex-col pb-12 gap-1 px-1 mt-1">
         {BUILDINGS.map((building) => {
           if (!isBuildingVisible(building)) return null;
 
@@ -82,52 +81,47 @@ export const BuildingStore: React.FC<Props> = ({ gameState, buyBuilding }) => {
               onClick={() => buyBuilding(building.id, buyAmount)}
               disabled={!canAfford}
               className={`
-                flex items-center p-3 border-b border-gray-700/50 transition-all duration-200 relative overflow-hidden group
+                flex items-center p-2 rounded-lg border border-transparent transition-all duration-200 relative overflow-hidden group w-full mx-auto
                 ${canAfford 
-                  ? 'hover:bg-indigo-900/20 cursor-pointer' 
-                  : 'opacity-50 grayscale cursor-not-allowed bg-gray-800/30'}
+                  ? 'hover:bg-gray-800 hover:border-gray-700 cursor-pointer active:scale-[0.99]' 
+                  : 'opacity-40 grayscale cursor-not-allowed bg-gray-900'}
               `}
             >
               {canAfford && (
-                <>
-                  <div className="absolute inset-0 bg-indigo-500/5 w-0 group-hover:w-full transition-all duration-300" />
-                  {/* Smoke / Glow Animation */}
-                  <div className="absolute bottom-2 right-1/4 w-8 h-8 bg-white/20 rounded-full blur-xl opacity-0 group-hover:animate-[smoke-rise_2s_infinite_ease-out] pointer-events-none"></div>
-                  <div className="absolute bottom-4 right-1/3 w-6 h-6 bg-indigo-400/20 rounded-full blur-xl opacity-0 group-hover:animate-[smoke-rise_2.5s_infinite_ease-out] delay-75 pointer-events-none"></div>
-                </>
+                <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
 
-              {/* Icon Container */}
-              <div className="w-14 h-14 bg-gray-700/50 rounded-lg flex items-center justify-center mr-4 shadow-inner relative shrink-0 border border-white/5 group-hover:border-indigo-400/30 transition-colors z-10">
-                 <building.icon size={28} className="text-amber-100 drop-shadow-md relative z-10" />
+              {/* Icon */}
+              <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center mr-3 shadow-inner relative shrink-0 border border-gray-700 group-hover:border-indigo-500/30 transition-colors">
+                 <building.icon size={24} className="text-gray-300 group-hover:text-amber-200 transition-colors" />
                  {count > 0 && (
-                     <div className="absolute -top-2 -right-2 bg-indigo-600 border border-indigo-400 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-bold text-white z-20 shadow-lg">
+                     <div className="absolute -top-2 -right-2 bg-gray-700 border border-gray-600 rounded text-[9px] px-1.5 font-bold text-white shadow-md z-10">
                        {count}
                      </div>
                  )}
               </div>
 
               {/* Info */}
-              <div className="flex-1 text-left relative z-10">
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-base font-bold text-shadow-sm text-gray-100 group-hover:text-white group-hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] transition-all">{building.name}</span>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex justify-between items-center mb-0.5">
+                  <span className="text-sm font-bold text-gray-200 group-hover:text-white truncate">{building.name}</span>
                   <span className={`text-xs font-mono font-bold ${canAfford ? 'text-green-400' : 'text-red-400'}`}>
-                    {cost.toLocaleString()}
+                    {formatNumber(cost)}
                   </span>
                 </div>
-                <div className="text-[11px] text-gray-400 group-hover:text-gray-300 flex items-center gap-1">
-                  <span className="text-indigo-300">+{building.baseCps} CpS</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-600"></span>
-                  <span className="italic opacity-70 truncate max-w-[150px]">{building.description}</span>
+                <div className="text-[10px] text-gray-500 flex items-center gap-1.5 truncate">
+                  <span className="text-indigo-400 font-semibold shrink-0">+{formatNumber(building.baseCps)}/s</span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-gray-600 shrink-0"></span>
+                  <span className="italic opacity-60 truncate">{building.description}</span>
                 </div>
               </div>
             </button>
           );
         })}
         
-        <div className="h-24 flex flex-col items-center justify-center text-gray-600 text-[10px] uppercase tracking-widest gap-2 opacity-50">
+        <div className="py-8 flex flex-col items-center justify-center text-gray-700 text-[10px] uppercase tracking-widest gap-2 opacity-40">
             <Lock className="w-4 h-4" /> 
-            <span>Mais em breve...</span>
+            <span>Continue jogando...</span>
         </div>
       </div>
     </div>

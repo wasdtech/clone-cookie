@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, GoldenCookieState, ActiveEffect, Achievement } from '../types';
 import { BUILDINGS, UPGRADES, ACHIEVEMENTS, INITIAL_STATE, SKILLS } from '../constants';
 
-const SAVE_KEY = 'biscoito_clicker_save_v2'; 
+const SAVE_KEY = 'biscoito_clicker_save_v3_fixed'; 
 
 export const useGameEngine = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
@@ -20,20 +20,19 @@ export const useGameEngine = () => {
   const autoSaveTimerRef = useRef(0);
   const lastTickRef = useRef(Date.now());
 
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
-
-  useEffect(() => {
-    activeEffectsRef.current = activeEffects;
-  }, [activeEffects]);
+  // Refs para prevenir loops em dependências do useEffect
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+  useEffect(() => { activeEffectsRef.current = activeEffects; }, [activeEffects]);
 
   const calculateStats = useCallback((state: GameState, effects: ActiveEffect[]) => {
     let newCps = 0;
     
+    // 1. Base Building CPS
     BUILDINGS.forEach((b) => {
       let buildingCps = b.baseCps;
       const count = state.buildings[b.id] || 0;
+      
+      // Upgrade Multipliers for Buildings
       state.upgrades.forEach((uId) => {
         const upgrade = UPGRADES.find(u => u.id === uId);
         if (upgrade?.type === 'building' && upgrade.targetId === b.id) {
@@ -43,180 +42,134 @@ export const useGameEngine = () => {
       newCps += buildingCps * count;
     });
 
+    // 2. Global Multipliers
     state.upgrades.forEach((uId) => {
       const upgrade = UPGRADES.find(u => u.id === uId);
       if (upgrade?.type === 'global') newCps *= upgrade.multiplier;
     });
 
+    // 3. Skill Tree Multipliers
     if (state.purchasedSkills.includes('heavenly_gates')) newCps *= 1.10;
-    if (state.purchasedSkills.includes('synergy_1')) {
-        const uniqueBuildings = Object.keys(state.buildings).filter(k => state.buildings[k] > 0).length;
-        newCps *= (1 + (uniqueBuildings * 0.01));
-    }
-    if (state.purchasedSkills.includes('meta_1')) newCps *= 1.5;
+    
+    // Synergy Logic
+    const uniqueBuildings = Object.keys(state.buildings).filter(k => state.buildings[k] > 0).length;
+    state.purchasedSkills.forEach(sid => {
+         if (sid.startsWith('prod_')) {
+             const level = parseInt(sid.split('_')[1]);
+             newCps *= (1 + (level * 0.03)); // +3% per node
+         }
+    });
+
+    if (state.purchasedSkills.includes('angel_investor')) newCps *= 1.05;
     if (state.purchasedSkills.includes('omega')) newCps *= 2.0;
 
+    // Prestige Multiplier
     const crystalEffectiveness = state.purchasedSkills.includes('cookie_galaxy') ? 0.02 : 0.01;
     const prestigeMultiplier = 1 + (state.prestigeLevel * crystalEffectiveness);
     newCps *= prestigeMultiplier;
 
-    let newClickValue = 1;
-    const clickPercent = state.purchasedSkills.includes('meta_2') ? 0.10 : (state.purchasedSkills.includes('click_god') ? 0.05 : 0.01);
-    newClickValue += newCps * clickPercent;
+    // 4. Click Value Calculation
+    let baseClick = 1;
+    
+    // Click scaling with CPS
+    const clickPercent = state.purchasedSkills.includes('click_god') ? 0.05 : 0.01; // Nerfed slightly for balance
+    baseClick += newCps * clickPercent;
 
+    // Click Upgrades
     state.upgrades.forEach((uId) => {
         const upgrade = UPGRADES.find(u => u.id === uId);
-        if (upgrade?.type === 'click') newClickValue *= upgrade.multiplier;
+        if (upgrade?.type === 'click') baseClick *= upgrade.multiplier;
     });
     
-    newClickValue *= prestigeMultiplier;
+    baseClick *= prestigeMultiplier;
+
+    // 5. Apply Active Temporary Effects (Golden Cookie)
+    // Separation of multipliers prevents exponential stacking bugs
+    let frenzyMult = 1;
+    let clickFrenzyMult = 1;
 
     effects.forEach(effect => {
-      if (effect.type === 'frenzy') newCps *= effect.multiplier;
-      if (effect.type === 'clickfrenzy') newClickValue *= effect.multiplier;
+      if (effect.type === 'frenzy') frenzyMult *= effect.multiplier;
+      if (effect.type === 'clickfrenzy') clickFrenzyMult *= effect.multiplier;
     });
 
-    return { calculatedCps: newCps, calculatedClickValue: newClickValue };
+    newCps *= frenzyMult;
+    baseClick *= clickFrenzyMult;
+    
+    // Se tiver frenzy normal, o clique também é afetado pelo frenzy normal (mecânica padrão)
+    baseClick *= frenzyMult;
+
+    return { calculatedCps: newCps, calculatedClickValue: baseClick };
   }, []);
 
+  // Load Save
   useEffect(() => {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       try {
-        const parsed: GameState = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Deep merge seguro
         const merged: GameState = {
             ...INITIAL_STATE,
             ...parsed,
             buildings: { ...INITIAL_STATE.buildings, ...(parsed.buildings || {}) },
-            purchasedSkills: parsed.purchasedSkills || [],
-            achievements: parsed.achievements || [],
-            upgrades: parsed.upgrades || []
+            // Garante arrays
+            purchasedSkills: Array.isArray(parsed.purchasedSkills) ? parsed.purchasedSkills : [],
+            achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
+            upgrades: Array.isArray(parsed.upgrades) ? parsed.upgrades : []
         };
+        
+        // Offline Gains Logic
         const now = Date.now();
-        const secondsOffline = (now - merged.lastSaveTime) / 1000;
-        const stats = calculateStats(merged, []);
+        const lastSave = merged.lastSaveTime || now;
+        const secondsOffline = (now - lastSave) / 1000;
+        
         if (secondsOffline > 60) {
+            const stats = calculateStats(merged, []);
             const hasAngel = merged.purchasedSkills.includes('angel_investor');
-            const maxSeconds = hasAngel ? 172800 : 86400;
+            const maxSeconds = hasAngel ? 172800 : 86400; // 48h vs 24h
             const efficiency = hasAngel ? 0.9 : 0.5;
+            
             const effectiveSeconds = Math.min(secondsOffline, maxSeconds); 
             const earned = stats.calculatedCps * effectiveSeconds * efficiency;
-            merged.cookies += earned;
-            merged.totalCookies += earned;
-            merged.lifetimeCookies += earned;
+            
+            if (earned > 0) {
+                merged.cookies += earned;
+                merged.totalCookies += earned;
+                merged.lifetimeCookies += earned;
+                console.log(`Offline: Ganhou ${earned} biscoitos por ${effectiveSeconds}s ausente.`);
+            }
         }
         setGameState({ ...merged, lastSaveTime: now });
-      } catch (e) { console.error("Erro ao carregar save", e); setGameState(INITIAL_STATE); }
+      } catch (e) { 
+          console.error("Save corrompido, resetando.", e); 
+          setGameState(INITIAL_STATE); 
+      }
     }
     lastTickRef.current = Date.now();
   }, [calculateStats]);
 
-  const saveGame = useCallback(() => {
-    try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
-        setIsSaving(true);
-        setTimeout(() => setIsSaving(false), 2000);
-    } catch (e) { console.error("Falha ao salvar", e); }
-  }, []);
-
-  const resetGame = useCallback(() => {
-      if (confirm("TEM CERTEZA? Isso apagará TODO o seu progresso permanentemente!")) {
-          localStorage.removeItem(SAVE_KEY);
-          setGameState(INITIAL_STATE);
-          setActiveEffects([]);
-          setGoldenCookie(null);
-          window.location.reload();
-      }
-  }, []);
-
-  const calculatePrestigeGain = (lifetimeCookies: number) => {
-      // NERF: Alterado de 1.000.000 para 10.000.000 para dificultar a ascensão
-      if (lifetimeCookies < 10000000) return 0;
-      return Math.floor(Math.sqrt(lifetimeCookies / 10000000));
-  };
-
-  const getBuildingPrice = (buildingId: string, currentCount: number, skills: string[]) => {
-      const building = BUILDINGS.find(b => b.id === buildingId);
-      if (!building) return 0;
-      let cost = Math.floor(building.baseCost * Math.pow(1.15, currentCount));
-      if (skills.includes('divine_discount')) cost = Math.floor(cost * 0.9);
-      skills.forEach(sid => {
-          if (sid.startsWith('eco_')) {
-              const val = parseInt(sid.split('_')[1]);
-              cost *= (1 - (val * 0.02));
-          }
-      });
-      return Math.floor(cost);
-  };
-
-  const getCumulativePrice = (buildingId: string, currentCount: number, skills: string[], amount: number) => {
-      let total = 0;
-      for (let i = 0; i < amount; i++) {
-          total += getBuildingPrice(buildingId, currentCount + i, skills);
-      }
-      return total;
-  };
-
-  const ascend = () => {
-      const totalPotentialLevel = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
-      const spentOnSkills = gameStateRef.current.purchasedSkills.reduce((acc, skillId) => {
-          const s = SKILLS.find(sk => sk.id === skillId);
-          return acc + (s ? s.cost : 0);
-      }, 0);
-      const totalOwned = gameStateRef.current.prestigeLevel + spentOnSkills;
-      const levelsToGain = Math.max(0, totalPotentialLevel - totalOwned);
-      if (levelsToGain <= 0) return false;
-
-      const hasTimeWarp = gameStateRef.current.purchasedSkills.includes('time_warp');
-      const startCookies = hasTimeWarp ? 50000 : 0; 
-      const hasLegacy = gameStateRef.current.purchasedSkills.includes('legacy_starter');
-      const startBuildings = { ...INITIAL_STATE.buildings };
-      if (hasLegacy) { startBuildings['cursor'] = 10; startBuildings['grandma'] = 5; }
-
-      if (confirm(`Você ascenderá e ganhará ${levelsToGain} Cristais. Habilidades mantidas.`)) {
-          setGameState(prev => ({
-              ...INITIAL_STATE,
-              cookies: startCookies,
-              buildings: startBuildings,
-              prestigeLevel: prev.prestigeLevel + levelsToGain,
-              purchasedSkills: prev.purchasedSkills,
-              achievements: prev.achievements,
-              lifetimeCookies: prev.lifetimeCookies, 
-              bakeryName: prev.bakeryName
-          }));
-          setActiveEffects([]);
-          setGoldenCookie(null);
-          saveGame();
-          return true;
-      }
-      return false;
-  };
-
-  const buySkill = (skillId: string) => {
-      const skill = SKILLS.find(s => s.id === skillId);
-      if (!skill || gameState.purchasedSkills.includes(skillId) || gameState.prestigeLevel < skill.cost) return;
-      if (skill.parent && !gameState.purchasedSkills.includes(skill.parent)) return;
-      setGameState(prev => ({
-          ...prev,
-          prestigeLevel: prev.prestigeLevel - skill.cost,
-          purchasedSkills: [...prev.purchasedSkills, skillId]
-      }));
-  };
-
+  // Main Loop
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      const delta = now - lastTickRef.current;
-      const safeDelta = Math.min(delta, 5000); 
+      // Delta time capping to prevent huge jumps if browser freezes
+      const delta = Math.min(now - lastTickRef.current, 1000); 
       lastTickRef.current = now;
+
+      // Filter expired effects
       setActiveEffects(prev => prev.filter(e => e.endTime > now));
 
+      // Calculate stats based on current state
       const { calculatedCps, calculatedClickValue } = calculateStats(gameStateRef.current, activeEffectsRef.current);
+      
       setCps(calculatedCps);
       setClickValue(calculatedClickValue);
 
+      // Add Cookies
+      const cookiesEarned = (calculatedCps / 1000) * delta;
+      
       setGameState((prev) => {
-        const cookiesEarned = (calculatedCps / 1000) * safeDelta;
         const newState = {
           ...prev,
           cookies: prev.cookies + cookiesEarned,
@@ -224,84 +177,182 @@ export const useGameEngine = () => {
           lifetimeCookies: (prev.lifetimeCookies || prev.totalCookies) + cookiesEarned,
           lastSaveTime: now,
         };
-        const newAchievements: string[] = [];
+
+        // Achievement Check (Throttled inside loop, but okay for this scale)
         ACHIEVEMENTS.forEach(ach => {
             if (!newState.achievements.includes(ach.id) && ach.trigger(newState)) {
-                newAchievements.push(ach.id);
+                newState.achievements = [...newState.achievements, ach.id];
                 setNotificationQueue(q => [...q, ach]);
             }
         });
-        if (newAchievements.length > 0) newState.achievements = [...newState.achievements, ...newAchievements];
+        
         return newState;
       });
 
-      goldenCookieTimerRef.current += safeDelta;
-      let luckBonus = 1;
-      gameStateRef.current.purchasedSkills.forEach(sid => {
-          if (sid.startsWith('luck_')) luckBonus += (parseInt(sid.split('_')[1]) * 0.05);
-      });
-      const hasLuckyStars = gameStateRef.current.purchasedSkills.includes('lucky_stars');
-      const baseTime = (hasLuckyStars ? 96000 : 120000) / luckBonus;
-      if (goldenCookieTimerRef.current >= baseTime + Math.random() * baseTime) { spawnGoldenCookie(); goldenCookieTimerRef.current = 0; }
-      autoSaveTimerRef.current += safeDelta;
-      if (autoSaveTimerRef.current >= 30000) { saveGame(); autoSaveTimerRef.current = 0; }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [calculateStats, saveGame]);
+      // Timers
+      goldenCookieTimerRef.current += delta;
+      autoSaveTimerRef.current += delta;
 
+      // Golden Cookie Spawn Logic
+      let spawnRateDivisor = 1;
+      gameStateRef.current.purchasedSkills.forEach(sid => {
+          if (sid.startsWith('luck_')) spawnRateDivisor += (parseInt(sid.split('_')[1]) * 0.05);
+      });
+      if (gameStateRef.current.purchasedSkills.includes('lucky_stars')) spawnRateDivisor *= 1.2;
+
+      // Base time: ~2 a 4 minutos (reduzido por skills)
+      const baseTime = (120000 + Math.random() * 120000) / spawnRateDivisor; 
+      
+      if (!goldenCookie && goldenCookieTimerRef.current >= baseTime) { 
+          spawnGoldenCookie(); 
+          goldenCookieTimerRef.current = 0; 
+      }
+
+      if (autoSaveTimerRef.current >= 30000) { // 30s autosave
+          saveGame(); 
+          autoSaveTimerRef.current = 0; 
+      }
+
+    }, 100); // 10 ticks per second for smoothness
+
+    return () => clearInterval(interval);
+  }, [calculateStats]);
+
+  // Golden Cookie Despawn Timer
   useEffect(() => {
+    let timer: any;
     if (goldenCookie) {
-        const timer = setInterval(() => {
-            setGoldenCookie(prev => (prev && prev.life > 0) ? { ...prev, life: prev.life - 0.1 } : null);
+        timer = setInterval(() => {
+            setGoldenCookie(prev => {
+                if (!prev) return null;
+                if (prev.life <= 0) return null;
+                return { ...prev, life: prev.life - 0.1 };
+            });
         }, 100);
-        return () => clearInterval(timer);
     }
+    return () => clearInterval(timer);
   }, [!!goldenCookie]);
 
+  const saveGame = useCallback(() => {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current));
+    setIsSaving(true);
+    setTimeout(() => setIsSaving(false), 2000);
+  }, []);
+
+  const resetGame = useCallback(() => {
+      if (confirm("TEM CERTEZA? Isso apagará TODO o seu progresso permanentemente!")) {
+          localStorage.removeItem(SAVE_KEY);
+          window.location.reload();
+      }
+  }, []);
+
   const spawnGoldenCookie = () => {
-     setGoldenCookie({ active: true, x: Math.random() * 80 + 10, y: Math.random() * 80 + 10, type: Math.random() > 0.9 ? 'clickfrenzy' : (Math.random() > 0.5 ? 'frenzy' : 'lucky'), life: 13 });
+     // Probabilidades ajustadas
+     const rng = Math.random();
+     let type: 'frenzy' | 'lucky' | 'clickfrenzy' = 'lucky';
+     
+     if (rng > 0.95) type = 'clickfrenzy'; // 5% chance
+     else if (rng > 0.6) type = 'frenzy';  // 35% chance
+     else type = 'lucky';                  // 60% chance
+
+     const lifeTime = gameStateRef.current.purchasedSkills.includes('golden_longevity') ? 18 : 13;
+
+     setGoldenCookie({ 
+         active: true, 
+         x: Math.random() * 80 + 10, 
+         y: Math.random() * 80 + 10, 
+         type, 
+         life: lifeTime 
+     });
   };
 
   const clickGoldenCookie = () => {
     if (!goldenCookie) return;
+    
     let message = "";
     const now = Date.now();
-    const multiplierBonus = gameState.purchasedSkills.includes('golden_longevity') ? 1.3 : 1.0;
+    // Bônus de duração de efeito
+    const durationMult = gameState.purchasedSkills.includes('golden_longevity') ? 1.5 : 1.0;
 
     if (goldenCookie.type === 'lucky') {
-        const gain = Math.min(gameState.cookies * 0.15 + 13, cps * 900 + 13);
-        setGameState(prev => ({ ...prev, cookies: prev.cookies + gain, totalCookies: prev.totalCookies + gain, lifetimeCookies: prev.lifetimeCookies + gain }));
-        message = `Sortudo! +${Math.floor(gain)}`;
+        // "Lucky" dá biscoitos baseados no banco atual ou CpS (o menor dos dois, pra evitar exploit)
+        // 15% do banco ou 15 minutos de CpS
+        const bankCap = gameState.cookies * 0.15;
+        const cpsCap = cps * 900; // 15 min
+        let gain = Math.min(bankCap, cpsCap) + 13; // +13 base
+        
+        // Se CpS for 0 ou muito baixo, garante um mínimo baseado no clique
+        if (gain < clickValue * 10) gain = clickValue * 10 + 13;
+
+        setGameState(prev => ({ 
+            ...prev, 
+            cookies: prev.cookies + gain, 
+            totalCookies: prev.totalCookies + gain, 
+            lifetimeCookies: prev.lifetimeCookies + gain 
+        }));
+        message = `Sortudo!`;
     } else {
+        // Lógica de Efeitos CORRIGIDA
         const type = goldenCookie.type;
-        const baseDuration = type === 'frenzy' ? 77000 : 13000;
-        // NERF: Multiplicador de Click Frenzy reduzido de 777 para 100
-        const baseMult = type === 'frenzy' ? 7 : 100;
-        const labelBase = type === 'frenzy' ? 'Frenesi' : 'Click Power';
-        const dur = baseDuration * multiplierBonus;
+        const isFrenzy = type === 'frenzy';
+        
+        const baseMult = isFrenzy ? 7 : 777;
+        const baseDuration = (isFrenzy ? 77000 : 13000) * durationMult;
+        const label = isFrenzy ? 'Frenesi (x7)' : 'Click Power (x777)';
 
         setActiveEffects(prev => {
-            const existingIndex = prev.findIndex(e => e.type === type);
-            if (existingIndex !== -1) {
-                const updated = [...prev];
-                const old = updated[existingIndex];
-                // Acumular: Multiplicar o poder e somar o tempo restante
-                const newMult = old.multiplier * baseMult;
-                updated[existingIndex] = {
-                    ...old,
-                    multiplier: newMult,
-                    endTime: old.endTime + dur,
-                    duration: old.duration + dur,
-                    label: `${labelBase} (x${newMult})`
-                };
-                return updated;
+            const existing = prev.find(e => e.type === type);
+            
+            if (existing) {
+                // Se já existe, APENAS RESETA O TEMPO para o máximo. 
+                // NÃO SOMA TEMPO, NÃO MULTIPLICA O MULTIPLICADOR.
+                return prev.map(e => 
+                    e.type === type 
+                    ? { ...e, endTime: now + baseDuration, duration: baseDuration } 
+                    : e
+                );
+            } else {
+                // Novo efeito
+                return [...prev, { 
+                    type, 
+                    label, 
+                    multiplier: baseMult, 
+                    endTime: now + baseDuration, 
+                    duration: baseDuration 
+                }];
             }
-            return [...prev, { type, label: `${labelBase} (x${baseMult})`, multiplier: baseMult, endTime: now + dur, duration: dur }];
         });
-        message = type === 'frenzy' ? "Frenesi Acumulado!" : "Poder Acumulado!";
+        message = isFrenzy ? "Frenesi!" : "Clickstorm!";
     }
     setGoldenCookie(null);
     return message;
+  };
+
+  const calculatePrestigeGain = (lifetimeCookies: number) => {
+      if (lifetimeCookies < 10000000) return 0;
+      return Math.floor(Math.sqrt(lifetimeCookies / 10000000));
+  };
+
+  const getCumulativePrice = (buildingId: string, currentCount: number, skills: string[], amount: number) => {
+      const building = BUILDINGS.find(b => b.id === buildingId);
+      if (!building) return 0;
+      
+      let total = 0;
+      let costMultiplier = 1;
+      
+      if (skills.includes('divine_discount')) costMultiplier *= 0.9;
+      skills.forEach(sid => {
+          if (sid.startsWith('eco_')) {
+              const val = parseInt(sid.split('_')[1]);
+              costMultiplier *= (1 - (val * 0.02));
+          }
+      });
+
+      for (let i = 0; i < amount; i++) {
+          const basePrice = building.baseCost * Math.pow(1.15, currentCount + i);
+          total += Math.floor(basePrice * costMultiplier);
+      }
+      return total;
   };
 
   const buyBuilding = (buildingId: string, amount: number = 1) => {
@@ -320,15 +371,81 @@ export const useGameEngine = () => {
     const upgrade = UPGRADES.find((u) => u.id === upgradeId);
     let cost = upgrade ? upgrade.cost : 0;
     if (gameState.purchasedSkills.includes('pure_magic')) cost = Math.floor(cost * 0.8);
+    
     if (upgrade && gameState.cookies >= cost && !gameState.upgrades.includes(upgradeId)) {
-      setGameState((prev) => ({ ...prev, cookies: prev.cookies - cost, upgrades: [...prev.upgrades, upgradeId] }));
+      setGameState((prev) => ({ 
+          ...prev, 
+          cookies: prev.cookies - cost, 
+          upgrades: [...prev.upgrades, upgradeId] 
+      }));
     }
   };
 
   const manualClick = () => {
-    setGameState((prev) => ({ ...prev, cookies: prev.cookies + clickValue, totalCookies: prev.totalCookies + clickValue, lifetimeCookies: prev.lifetimeCookies + clickValue, manualClicks: (prev.manualClicks || 0) + 1 }));
+    setGameState((prev) => ({ 
+        ...prev, 
+        cookies: prev.cookies + clickValue, 
+        totalCookies: prev.totalCookies + clickValue, 
+        lifetimeCookies: prev.lifetimeCookies + clickValue, 
+        manualClicks: (prev.manualClicks || 0) + 1 
+    }));
     return clickValue;
   };
 
-  return { gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, saveGame, buyBuilding, buyUpgrade, manualClick, resetGame, goldenCookie, clickGoldenCookie, getCumulativePrice, updateBakeryName: (n:string) => setGameState(p=>({...p, bakeryName:n})), dismissNotification: (id:string)=>setNotificationQueue(q=>q.filter(n=>n.id!==id)), ascend, calculatePrestigeGain, buySkill };
+  const ascend = () => {
+      const totalPotentialLevel = calculatePrestigeGain(gameStateRef.current.lifetimeCookies);
+      const spentOnSkills = gameStateRef.current.purchasedSkills.reduce((acc, skillId) => {
+          const s = SKILLS.find(sk => sk.id === skillId);
+          return acc + (s ? s.cost : 0);
+      }, 0);
+      const totalOwned = gameStateRef.current.prestigeLevel + spentOnSkills;
+      const levelsToGain = Math.max(0, totalPotentialLevel - totalOwned);
+      
+      if (levelsToGain <= 0) return false;
+
+      const hasTimeWarp = gameStateRef.current.purchasedSkills.includes('time_warp');
+      const startCookies = hasTimeWarp ? 50000 : 0; 
+      
+      if (confirm(`ASCENSÃO: Você ganhará ${levelsToGain} Cristais. Seu progresso de prédios será resetado, mas conquistas e habilidades serão mantidas.`)) {
+          setGameState(prev => ({
+              ...INITIAL_STATE,
+              cookies: startCookies,
+              prestigeLevel: prev.prestigeLevel + levelsToGain,
+              purchasedSkills: prev.purchasedSkills,
+              achievements: prev.achievements,
+              lifetimeCookies: prev.lifetimeCookies, 
+              bakeryName: prev.bakeryName,
+              // Mantém estatísticas totais, mas reseta o resto
+              totalCookies: 0
+          }));
+          setActiveEffects([]);
+          setGoldenCookie(null);
+          saveGame();
+          return true;
+      }
+      return false;
+  };
+
+  const buySkill = (skillId: string) => {
+      const skill = SKILLS.find(s => s.id === skillId);
+      if (!skill || gameState.purchasedSkills.includes(skillId) || gameState.prestigeLevel < skill.cost) return;
+      
+      // Check parent requirement
+      if (skill.parent && !gameState.purchasedSkills.includes(skill.parent)) return;
+      
+      setGameState(prev => ({
+          ...prev,
+          prestigeLevel: prev.prestigeLevel - skill.cost,
+          purchasedSkills: [...prev.purchasedSkills, skillId]
+      }));
+  };
+
+  const updateBakeryName = (name: string) => setGameState(p => ({...p, bakeryName: name}));
+  const dismissNotification = (id: string) => setNotificationQueue(q => q.filter(n => n.id !== id));
+
+  return { 
+      gameState, cps, clickValue, activeEffects, notificationQueue, isSaving, goldenCookie, 
+      saveGame, buyBuilding, buyUpgrade, manualClick, resetGame, clickGoldenCookie, 
+      getCumulativePrice, updateBakeryName, dismissNotification, ascend, calculatePrestigeGain, buySkill 
+  };
 };
