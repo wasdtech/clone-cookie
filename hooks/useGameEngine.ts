@@ -52,7 +52,6 @@ export const useGameEngine = () => {
     if (state.purchasedSkills.includes('heavenly_gates')) newCps *= 1.10;
     
     // Synergy Logic
-    const uniqueBuildings = Object.keys(state.buildings).filter(k => state.buildings[k] > 0).length;
     state.purchasedSkills.forEach(sid => {
          if (sid.startsWith('prod_')) {
              const level = parseInt(sid.split('_')[1]);

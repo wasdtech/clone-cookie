@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { GameState } from '../types';
 import { Pencil, MousePointer2 } from 'lucide-react';
-import { AnimatedNumber } from './AnimatedNumber';
 import { formatNumber } from '../utils/formatting';
 
 interface Props {
